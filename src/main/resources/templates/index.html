@@ -24,6 +24,8 @@
     </header>
     <p class="tagline">Balanced playlists for 1 to 5 people, built from everyone&rsquo;s top tracks.</p>
 
+    <p th:if="${expired}" class="banner err" role="alert">Your session ended because your stored Spotify login is no longer in this app. Log in again to carry on.</p>
+
     <section th:unless="${loggedIn}" class="card signin">
         <h2>Get started</h2>
         <p class="muted">Log in with the Spotify account you want to blend. Everyone in a blend needs to log in here once.</p>

@@ -143,7 +143,14 @@ class TemplateRenderTest {
     fun `signed-out home page offers Spotify login`() {
         val html = render("index", mapOf("loggedIn" to false))
         assertContains(html, "/oauth2/authorization/spotify")
+        assertFalse(html.contains("session ended"))
         preview("signin", html)
+    }
+
+    @Test
+    fun `sign-in page explains an ended session`() {
+        val html = render("index", mapOf("loggedIn" to false, "expired" to true))
+        assertContains(html, "session ended")
     }
 
     private fun render(template: String, variables: Map<String, Any>): String =

@@ -75,4 +75,15 @@ class PlaylistServiceOptOutTest {
         val outcome = service.create("owner", listOf("friend"), TimeRange.RECENT, 10, SharedMode.CAPPED)
         assertEquals(listOf("owner", "friend"), outcome.blend.memberIds)
     }
+
+    @Test
+    fun `malformed or too many partner ids are rejected before anything else happens`() {
+        assertFailsWith<IllegalArgumentException> {
+            service.create("owner", listOf("../../me"), TimeRange.RECENT, 10, SharedMode.CAPPED)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            service.create("owner", listOf("a", "b", "c", "d", "e"), TimeRange.RECENT, 10, SharedMode.CAPPED)
+        }
+        verifyNoInteractions(spotify)
+    }
 }

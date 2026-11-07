@@ -6,9 +6,9 @@ import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.playlists.Blend
 import dev.chesire.reblender.playlists.BlendOutcome
 import dev.chesire.reblender.playlists.PlaylistService
+import dev.chesire.reblender.security.SpotifyIds
 import dev.chesire.reblender.spotify.ReloginRequiredException
 import dev.chesire.reblender.users.AccountService
-import dev.chesire.reblender.users.SpotifyProfile
 import dev.chesire.reblender.users.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -37,16 +37,18 @@ class HomeController(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @GetMapping("/")
-    fun home(@AuthenticationPrincipal principal: OAuth2User?, model: Model): String {
+    fun home(
+        @AuthenticationPrincipal principal: OAuth2User?,
+        @RequestParam(required = false) expired: String?,
+        model: Model,
+    ): String {
         if (principal == null) {
             model.addAttribute("loggedIn", false)
+            // Set by StaleSessionInterceptor when a session outlived the user's stored login (S7).
+            model.addAttribute("expired", expired != null)
             return "index"
         }
         val me = principal.name
-        if (users.findById(me) == null) {
-            // Session outlived the database (e.g. the volume was reset): re-record the user.
-            users.upsert(SpotifyProfile.toAppUser(me, principal))
-        }
         val allUsers = users.findAll()
         val names = allUsers.associate { it.spotifyId to it.displayName }
         model.addAttribute("loggedIn", true)
@@ -94,6 +96,7 @@ class HomeController(
         model: Model,
         redirect: RedirectAttributes,
     ): String {
+        if (!validPlaylistId(playlistId, redirect)) return "redirect:/"
         val breakdown = playlists.breakdown(principal.name, playlistId)
         if (breakdown == null) {
             redirect.addFlashAttribute("error", "That playlist isn't one of yours.")
@@ -111,6 +114,7 @@ class HomeController(
         @RequestParam(required = false) returnTo: String?,
         redirect: RedirectAttributes,
     ): String {
+        if (!validPlaylistId(playlistId, redirect)) return "redirect:/"
         handle(principal.name, redirect) {
             val outcome = playlists.update(principal.name, playlistId)
             "Updated \"${outcome.blend.playlistName}\" with ${outcome.blend.trackCount} songs." + shortNote(outcome)
@@ -126,6 +130,7 @@ class HomeController(
         @RequestParam(defaultValue = "false") removeFromSpotify: Boolean,
         redirect: RedirectAttributes,
     ): String {
+        if (!validPlaylistId(playlistId, redirect)) return "redirect:/"
         handle(principal.name, redirect) {
             val outcome = playlists.delete(principal.name, playlistId, removeFromSpotify)
             val name = "\"${outcome.playlistName}\""
@@ -185,6 +190,13 @@ class HomeController(
             "not enough usable top tracks to fill an even split"
         }
         return " That's fewer than the ${blend.size} you asked for: $why (usable top tracks: $counts)."
+    }
+
+    /** S9: playlist IDs from the URL must look like Spotify IDs before they reach the database, Spotify or a redirect. */
+    private fun validPlaylistId(playlistId: String, redirect: RedirectAttributes): Boolean {
+        if (SpotifyIds.isPlaylistId(playlistId)) return true
+        redirect.addFlashAttribute("error", "That isn't a valid playlist.")
+        return false
     }
 
     private fun handle(me: String, redirect: RedirectAttributes, action: () -> String) {

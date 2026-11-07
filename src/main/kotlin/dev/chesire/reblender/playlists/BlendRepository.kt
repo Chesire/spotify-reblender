@@ -2,6 +2,8 @@ package dev.chesire.reblender.playlists
 
 import dev.chesire.reblender.blend.SharedMode
 import dev.chesire.reblender.blend.TimeRange
+import dev.chesire.reblender.security.SafeUrls
+import dev.chesire.reblender.spotify.SpotifyClient
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -39,10 +41,12 @@ data class BlendTrack(
 class BlendRepository(private val jdbc: JdbcClient) {
 
     private val rowMapper = RowMapper { rs, _ ->
+        val playlistId = rs.getString("playlist_id")
         Blend(
-            playlistId = rs.getString("playlist_id"),
+            playlistId = playlistId,
             playlistName = rs.getString("playlist_name"),
-            playlistUrl = rs.getString("playlist_url"),
+            // S5: re-checked on read so rows written before the https-only rule can't render an unsafe link.
+            playlistUrl = SafeUrls.httpsOrNull(rs.getString("playlist_url")) ?: SpotifyClient.playlistUrl(playlistId),
             ownerId = rs.getString("owner_id"),
             memberIds = emptyList(),
             timeRange = TimeRange.valueOf(rs.getString("time_range")),
@@ -65,7 +69,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
         )
             .param("playlistId", blend.playlistId)
             .param("name", blend.playlistName)
-            .param("url", blend.playlistUrl)
+            .param("url", SafeUrls.httpsOrNull(blend.playlistUrl) ?: SpotifyClient.playlistUrl(blend.playlistId))
             .param("owner", blend.ownerId)
             .param("range", blend.timeRange.name)
             .param("size", blend.size)
@@ -126,7 +130,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
                 .param("name", track.name.take(500))
                 .param("artists", track.artists.joinToString(SEPARATOR).take(1000))
                 .param("contributors", track.contributors.joinToString(SEPARATOR))
-                .param("image", track.imageUrl?.takeIf { it.length <= 1000 })
+                .param("image", SafeUrls.httpsOrNull(track.imageUrl))
                 .update()
         }
     }
@@ -141,7 +145,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
                     name = rs.getString("track_name"),
                     artists = rs.getString("artists").split(SEPARATOR).filter { it.isNotEmpty() },
                     contributors = rs.getString("contributors").split(SEPARATOR).filter { it.isNotEmpty() },
-                    imageUrl = rs.getString("image_url"),
+                    imageUrl = SafeUrls.httpsOrNull(rs.getString("image_url")),
                 )
             }
             .list()

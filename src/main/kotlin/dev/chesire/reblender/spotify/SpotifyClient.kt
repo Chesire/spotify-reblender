@@ -3,6 +3,8 @@ package dev.chesire.reblender.spotify
 import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.blend.Track
 import dev.chesire.reblender.config.ReblenderProperties
+import dev.chesire.reblender.security.SafeUrls
+import dev.chesire.reblender.security.SpotifyIds
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
@@ -40,8 +42,10 @@ class SpotifyClient(
         val items = json.decodeFromString(TopTracksResponse.serializer(), body).items
         val local = items.count { it.isLocal }
         val missingId = items.count { !it.isLocal && (it.id == null || it.uri == null) }
+        // S9: only well-formed IDs whose URI is exactly spotify:track:<id> are used (they end up in links and API calls).
+        val malformed = items.count { !it.isLocal && it.id != null && it.uri != null && !isValidTrack(it.id, it.uri) }
         val tracks = items
-            .filter { !it.isLocal && it.id != null && it.uri != null }
+            .filter { !it.isLocal && it.id != null && it.uri != null && isValidTrack(it.id, it.uri) }
             .map {
                 Track(
                     id = it.id!!,
@@ -52,8 +56,9 @@ class SpotifyClient(
                 )
             }
         log.info(
-            "Top tracks for {} ({}): Spotify returned {} of {} requested; skipped {} local file(s) and {} without an ID; {} usable",
-            spotifyId, range.spotifyValue, items.size, TOP_TRACKS_LIMIT, local, missingId, tracks.size,
+            "Top tracks for {} ({}): Spotify returned {} of {} requested; skipped {} local file(s), {} without an ID " +
+                "and {} with a malformed ID; {} usable",
+            spotifyId, range.spotifyValue, items.size, TOP_TRACKS_LIMIT, local, missingId, malformed, tracks.size,
         )
         return tracks
     }
@@ -74,9 +79,13 @@ class SpotifyClient(
             ?: error("Spotify returned an empty response when creating a playlist")
 
         val playlist = json.decodeFromString(PlaylistDto.serializer(), body)
-        val url = playlist.externalUrls.spotify.ifBlank { "https://open.spotify.com/playlist/${playlist.id}" }
+        check(SpotifyIds.isPlaylistId(playlist.id)) { "Spotify returned a malformed playlist ID" }
+        // S5: only an https link is stored; otherwise fall back to the standard one built from the (validated) ID.
+        val url = SafeUrls.httpsOrNull(playlist.externalUrls.spotify) ?: playlistUrl(playlist.id)
         return CreatedPlaylist(playlist.id, url)
     }
+
+    private fun isValidTrack(id: String, uri: String): Boolean = SpotifyIds.isTrackId(id) && uri == "spotify:track:$id"
 
     /**
      * Replaces the whole playlist contents. Spotify takes at most 100 items per request, so the first
@@ -113,5 +122,7 @@ class SpotifyClient(
     companion object {
         const val TOP_TRACKS_LIMIT = 50
         const val MAX_ITEMS_PER_REQUEST = 100
+
+        fun playlistUrl(playlistId: String) = "https://open.spotify.com/playlist/$playlistId"
     }
 }

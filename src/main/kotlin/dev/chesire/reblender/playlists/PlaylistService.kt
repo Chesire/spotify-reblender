@@ -1,5 +1,6 @@
 package dev.chesire.reblender.playlists
 
+import dev.chesire.reblender.security.SpotifyIds
 import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.blend.BlendedTrack
 import dev.chesire.reblender.blend.Participant
@@ -41,7 +42,12 @@ class PlaylistService(
         size: Int,
         sharedMode: SharedMode,
     ): BlendOutcome {
+        // S9: bound and shape-check what came from the form before using it in queries or messages.
+        require(partnerIds.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
+            "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
+        }
         val partners = partnerIds.filter { it.isNotBlank() }.distinct()
+        require(partners.all(SpotifyIds::isUserId)) { "That isn't a valid person to blend with." }
         require(ownerId !in partners) { "You're always in your own blend; pick other people." }
         require(partners.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
             "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
