@@ -29,7 +29,7 @@ Inputs: everyone's top 50 tracks for the chosen range, a size N, and a shared-so
 5. If someone runs out of their own tracks, the others fill their slots. If everyone runs out, leftover shared songs fill in.
 6. Songs are **interleaved** (e.g. `S A B S A B …`) so nobody gets a long run.
 
-Time ranges come from Spotify: **Recent** = `short_term` (~4 weeks), **All-time** = `long_term` (~1 year; Spotify has no true all-time).
+Time ranges are Spotify's three windows: **Recent** = `short_term` (~4 weeks), **Half-year** = `medium_term` (~6 months), **All-time** = `long_term` (~1 year; Spotify has no true all-time). A short window can have fewer than 50 top tracks if you haven't listened to many different songs; the success message says when that shortened a playlist.
 
 ## Spotify limits you should know
 
