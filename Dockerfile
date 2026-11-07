@@ -7,8 +7,15 @@ COPY src src
 RUN ./gradlew --no-daemon bootJar -x test
 
 FROM eclipse-temurin:21-jre
+# Run as an unprivileged user; only it can read the database (and the encrypted tokens) in /data.
+RUN groupadd --system reblender \
+    && useradd --system --gid reblender --home-dir /app --shell /usr/sbin/nologin reblender \
+    && mkdir -p /data \
+    && chown reblender:reblender /data \
+    && chmod 700 /data
 WORKDIR /app
-COPY --from=build /workspace/build/libs/*.jar app.jar
+COPY --from=build --chown=reblender:reblender /workspace/build/libs/*.jar app.jar
+USER reblender
 VOLUME /data
 ENV DATABASE_URL=jdbc:h2:file:/data/reblender
 EXPOSE 8080

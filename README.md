@@ -30,7 +30,7 @@ Time ranges come from Spotify: **Recent** = `short_term` (~4 weeks), **All-time*
 2. Add the redirect URI: `http://127.0.0.1:8080/login/oauth2/code/spotify`
    (use `127.0.0.1`, not `localhost`; for a hosted install use `https://your.domain/login/oauth2/code/spotify`).
 3. Under **User Management**, add the Spotify email of everyone who will use it (you included).
-4. `cp .env.example .env` and fill in the client ID and secret (and `APP_BASE_URL` if not local).
+4. `cp .env.example .env && chmod 600 .env`, then fill in the client ID and secret, and set `TOKEN_ENCRYPTION_KEY` to the output of `openssl rand -base64 32` (and `APP_BASE_URL` if not local).
 
 ## Run
 
@@ -43,7 +43,7 @@ docker compose up --build
 Without Docker (JDK 21):
 
 ```sh
-export SPOTIFY_CLIENT_ID=... SPOTIFY_CLIENT_SECRET=...
+set -a; . ./.env; set +a   # same values as Docker, incl. a fixed TOKEN_ENCRYPTION_KEY
 ./gradlew bootRun
 ```
 
@@ -51,13 +51,27 @@ Open <http://127.0.0.1:8080>, log in, then have your partner do the same (on the
 
 Tests: `./gradlew test` (covers the blend engine).
 
-## Storage
+## Storage and security
 
 An H2 database file (`./data/` locally, the `reblender-data` volume in Docker) holds:
 
-- `oauth2_authorized_client`: Spotify tokens (so the app can read your partner's top tracks when they're not logged in). **Stored unencrypted**, so keep the volume private.
-- `app_user`: everyone who has logged in.
+- `oauth2_authorized_client`: Spotify access and refresh tokens, so the app can read your partner's top tracks when they're not logged in.
+- `app_user`: everyone who has logged in (Spotify ID and display name).
 - `pairing`: each managed playlist and its settings.
+
+How the tokens are protected:
+
+- **Encrypted at rest** with AES-256-GCM (`TokenCipher`). Each ciphertext is bound to its row (Spotify user ID), so a token copied into another row won't decrypt, and tampering is detected. The key comes from `TOKEN_ENCRYPTION_KEY` and is never stored in the database. The app refuses to start without a valid key.
+- **Fails closed.** If Spring's storage format ever changes so a token can't be encrypted, the write is refused rather than stored in plaintext. A row that can't be decrypted (wrong key, tampering, or pre-encryption data) is deleted and that user is asked to log in again.
+- **Least privilege.** Only the `user-top-read` and `playlist-modify-private` scopes are requested.
+- **Never sent to the browser.** Tokens stay server-side; the browser only gets an HttpOnly, SameSite=Lax session cookie (set `SESSION_COOKIE_SECURE=true` behind HTTPS).
+- **Container hardening.** It runs as a non-root user, with a read-only root filesystem and `no-new-privileges`. `/data` is only readable by the app user, and the port is bound to `127.0.0.1` by default.
+- **Short-lived anyway.** Access tokens last an hour; Spotify refresh tokens expire 6 months after login.
+- **Forget me.** The "Forget me" button deletes your stored tokens, your user record and every blend you're part of. To also revoke the app on Spotify's side, remove it at <https://www.spotify.com/account/apps/>.
+
+What this does **not** protect against: someone with access to both the `.env` file (or the container's environment) and the database volume can decrypt the tokens. Keep `.env` at `chmod 600`, keep the key out of the volume, and don't expose the port without TLS.
+
+Rotating the key: change `TOKEN_ENCRYPTION_KEY` and restart. Existing tokens become unreadable, are discarded, and everyone logs in again.
 
 ## Stack
 

@@ -27,6 +27,10 @@ class UserRepository(private val jdbc: JdbcClient) {
             .update()
     }
 
+    fun delete(spotifyId: String) {
+        jdbc.sql("DELETE FROM app_user WHERE spotify_id = :id").param("id", spotifyId).update()
+    }
+
     fun findAll(): List<AppUser> =
         jdbc.sql("SELECT spotify_id, display_name FROM app_user ORDER BY display_name")
             .query { rs, _ -> AppUser(rs.getString("spotify_id"), rs.getString("display_name")) }

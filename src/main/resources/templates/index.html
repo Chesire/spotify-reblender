@@ -22,9 +22,15 @@
     <th:block th:if="${loggedIn}">
         <div class="bar">
             <span>Logged in as <strong th:text="${me}">you</strong></span>
-            <form th:action="@{/logout}" method="post">
-                <button type="submit" class="link">Log out</button>
-            </form>
+            <span class="actions">
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="link">Log out</button>
+                </form>
+                <form th:action="@{/account/forget}" method="post"
+                      onsubmit="return confirm('Delete your stored Spotify login and all blends you are part of from this app? Your Spotify playlists are not deleted.');">
+                    <button type="submit" class="link">Forget me</button>
+                </form>
+            </span>
         </div>
 
         <p th:if="${message}" class="flash ok" th:text="${message}"></p>

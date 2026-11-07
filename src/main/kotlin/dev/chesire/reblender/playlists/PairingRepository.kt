@@ -72,6 +72,13 @@ class PairingRepository(private val jdbc: JdbcClient) {
             .update()
     }
 
+    /** Removes every pairing the user owns or is the partner in. The Spotify playlists themselves are left alone. */
+    fun deleteInvolving(spotifyId: String) {
+        jdbc.sql("DELETE FROM pairing WHERE owner_id = :id OR partner_id = :id")
+            .param("id", spotifyId)
+            .update()
+    }
+
     fun findByOwner(ownerId: String): List<Pairing> =
         jdbc.sql("SELECT * FROM pairing WHERE owner_id = :owner ORDER BY created_at DESC")
             .param("owner", ownerId)

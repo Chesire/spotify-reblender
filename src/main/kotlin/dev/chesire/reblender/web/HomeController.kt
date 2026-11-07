@@ -5,11 +5,16 @@ import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.playlists.Pairing
 import dev.chesire.reblender.playlists.PlaylistService
 import dev.chesire.reblender.spotify.ReloginRequiredException
+import dev.chesire.reblender.users.AccountService
 import dev.chesire.reblender.users.AppUser
 import dev.chesire.reblender.users.UserRepository
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.core.user.OAuth2User
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
@@ -25,6 +30,7 @@ import java.time.format.DateTimeFormatter
 class HomeController(
     private val users: UserRepository,
     private val playlists: PlaylistService,
+    private val accounts: AccountService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -80,6 +86,20 @@ class HomeController(
             val pairing = playlists.update(principal.name, playlistId)
             "Updated \"${pairing.playlistName}\" with ${pairing.trackCount} songs."
         }
+        return "redirect:/"
+    }
+
+    /** Deletes this user's stored tokens and data, then logs them out. */
+    @PostMapping("/account/forget")
+    fun forget(
+        authentication: Authentication,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        redirect: RedirectAttributes,
+    ): String {
+        accounts.forget(authentication.name)
+        SecurityContextLogoutHandler().logout(request, response, authentication)
+        redirect.addFlashAttribute("message", "Your stored Spotify login and blends have been deleted from this app.")
         return "redirect:/"
     }
 
