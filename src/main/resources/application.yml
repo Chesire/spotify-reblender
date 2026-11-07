@@ -2,6 +2,13 @@ server:
   port: 8080
   # Respect X-Forwarded-* headers when running behind a reverse proxy (e.g. TLS terminator).
   forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        # Set SESSION_COOKIE_SECURE=true when serving over HTTPS.
+        secure: ${SESSION_COOKIE_SECURE:false}
 
 spring:
   application:
@@ -25,11 +32,10 @@ spring:
             client-authentication-method: client_secret_basic
             # Spotify requires an exact match; loopback must use 127.0.0.1, not localhost.
             redirect-uri: ${APP_BASE_URL:http://127.0.0.1:8080}/login/oauth2/code/spotify
+            # Least privilege: read top tracks, create/replace the app's own private playlists. Nothing else.
             scope:
               - user-top-read
-              - playlist-read-private
               - playlist-modify-private
-              - playlist-modify-public
         provider:
           spotify:
             authorization-uri: https://accounts.spotify.com/authorize
@@ -39,3 +45,5 @@ spring:
 
 reblender:
   spotify-api-base-url: https://api.spotify.com/v1
+  # Required. Base64 AES-256 key used to encrypt stored Spotify tokens: openssl rand -base64 32
+  token-encryption-key: ${TOKEN_ENCRYPTION_KEY:}

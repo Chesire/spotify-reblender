@@ -1,5 +1,7 @@
 package dev.chesire.reblender.config
 
+import dev.chesire.reblender.security.EncryptedJdbcAuthorizedClientService
+import dev.chesire.reblender.security.TokenCipher
 import dev.chesire.reblender.users.LoginSuccessHandler
 import dev.chesire.reblender.users.UserRepository
 import org.springframework.context.annotation.Bean
@@ -8,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager
-import org.springframework.security.oauth2.client.JdbcOAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
@@ -38,12 +39,20 @@ class SecurityConfig {
         return http.build()
     }
 
-    /** Persist tokens in the database so the app can act for a partner who isn't logged in. */
+    /** Fails fast at startup if TOKEN_ENCRYPTION_KEY is missing or malformed. */
+    @Bean
+    fun tokenCipher(properties: ReblenderProperties): TokenCipher = TokenCipher(properties.tokenEncryptionKey)
+
+    /**
+     * Persist tokens in the database (encrypted) so the app can act for a partner who isn't logged in.
+     */
     @Bean
     fun authorizedClientService(
         jdbcTemplate: JdbcTemplate,
         clientRegistrations: ClientRegistrationRepository,
-    ): OAuth2AuthorizedClientService = JdbcOAuth2AuthorizedClientService(jdbcTemplate, clientRegistrations)
+        tokenCipher: TokenCipher,
+    ): OAuth2AuthorizedClientService =
+        EncryptedJdbcAuthorizedClientService(jdbcTemplate, clientRegistrations, tokenCipher)
 
     /**
      * Works outside an HTTP request/session: loads a stored client by principal name
