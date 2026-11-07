@@ -17,7 +17,7 @@
                 <button type="submit" class="btn btn-text neutral">Log out</button>
             </form>
             <form th:action="@{/account/forget}" method="post"
-                  onsubmit="return confirm('Delete your stored Spotify login and all blends you are part of from this app? Your Spotify playlists are not deleted.');">
+                  data-confirm="Delete your stored Spotify login and all blends you are part of from this app? Your Spotify playlists are not deleted.">
                 <button type="submit" class="btn btn-text neutral">Forget me</button>
             </form>
         </div>
@@ -151,6 +151,23 @@
                     </dialog>
                 </li>
             </ul>
+        </section>
+        <section class="card">
+            <h2>Privacy</h2>
+            <form th:action="@{/account/blending}" method="post" class="setting" data-autosubmit>
+                <label class="switch-row">
+                    <span>
+                        <span class="setting-title">Let others include me in blends</span>
+                        <span class="supporting">When on, anyone using this app can add you to a blend, which uses your
+                            top tracks. Turning it off hides you from the list and stops blends that include you from updating.</span>
+                    </span>
+                    <span class="switch">
+                        <input type="checkbox" name="allowBlending" value="true" role="switch" th:checked="${allowBlending}">
+                        <span class="track" aria-hidden="true"><span class="handle"></span></span>
+                    </span>
+                </label>
+                <noscript><button type="submit" class="btn btn-tonal">Save</button></noscript>
+            </form>
         </section>
     </th:block>
 </main>

@@ -32,6 +32,18 @@
         });
     });
 
+    // Forms that ask first (kept out of inline handlers so the Content-Security-Policy can block inline script).
+    document.querySelectorAll("form[data-confirm]").forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+        });
+    });
+
+    // Settings forms save as soon as a switch changes.
+    document.querySelectorAll("form[data-autosubmit]").forEach(function (form) {
+        form.addEventListener("change", function () { form.submit(); });
+    });
+
     // New-playlist form: keep the size limits in step with how many people are picked
     // (1 song per person up to 50 each) and stop people picking more than allowed.
     var form = document.querySelector("form.blend-form");

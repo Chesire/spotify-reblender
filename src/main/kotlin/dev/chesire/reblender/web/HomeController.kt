@@ -51,7 +51,9 @@ class HomeController(
         val names = allUsers.associate { it.spotifyId to it.displayName }
         model.addAttribute("loggedIn", true)
         model.addAttribute("me", names[me] ?: me)
-        model.addAttribute("partners", allUsers.filter { it.spotifyId != me })
+        // Only people who allow it can be picked (also enforced in PlaylistService).
+        model.addAttribute("partners", allUsers.filter { it.spotifyId != me && it.allowBlending })
+        model.addAttribute("allowBlending", allUsers.firstOrNull { it.spotifyId == me }?.allowBlending ?: true)
         model.addAttribute("maxPartners", BlendEngine.MAX_PARTICIPANTS - 1)
         model.addAttribute("playlists", playlists.playlistsFor(me).map { blend ->
             val others = blend.memberIds.drop(1).map { names[it] ?: it }
@@ -134,6 +136,25 @@ class HomeController(
                     "(error ${outcome.spotifyStatus}). Delete it in Spotify yourself."
             }
         }
+        return "redirect:/"
+    }
+
+    /** S1: whether other people may include this user (and so read their top tracks) in blends. */
+    @PostMapping("/account/blending")
+    fun setBlending(
+        @AuthenticationPrincipal principal: OAuth2User,
+        @RequestParam(defaultValue = "false") allowBlending: Boolean,
+        redirect: RedirectAttributes,
+    ): String {
+        users.setAllowBlending(principal.name, allowBlending)
+        redirect.addFlashAttribute(
+            "message",
+            if (allowBlending) {
+                "Others can now include you in their blends."
+            } else {
+                "Others can no longer include you in blends. Existing blends that include you can't be updated."
+            },
+        )
         return "redirect:/"
     }
 

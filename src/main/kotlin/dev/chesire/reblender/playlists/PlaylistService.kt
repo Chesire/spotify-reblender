@@ -52,10 +52,15 @@ class PlaylistService(
             "With ${memberIds.size} ${if (memberIds.size == 1) "person" else "people"} the playlist must have " +
                 "between ${allowed.first} and ${allowed.last} songs."
         }
-        val names = memberIds.map { id ->
-            users.findById(id)?.displayName
+        val members = memberIds.map { id ->
+            users.findById(id)
                 ?: throw IllegalArgumentException(if (id == ownerId) "Unknown user. Log out and in again." else "Someone you picked hasn't logged in yet.")
         }
+        // Enforced here, not just by hiding people in the form: a crafted request can't include someone who opted out.
+        members.drop(1).firstOrNull { !it.allowBlending }?.let {
+            throw IllegalArgumentException("${it.displayName} has turned off being included in blends.")
+        }
+        val names = members.map { it.displayName }
 
         val (blended, usable) = buildBlend(memberIds, timeRange, size, sharedMode)
 
@@ -92,6 +97,13 @@ class PlaylistService(
     fun update(ownerId: String, playlistId: String): BlendOutcome {
         val blend = blends.findByIdAndOwner(playlistId, ownerId)
             ?: throw IllegalArgumentException("That playlist isn't one of yours.")
+        // Someone who has since opted out must not have their top tracks read again.
+        blend.memberIds.drop(1).mapNotNull(users::findById).firstOrNull { !it.allowBlending }?.let {
+            throw IllegalArgumentException(
+                "${it.displayName} has turned off being included in blends, so this one can't be updated. " +
+                    "Delete it or make a new one without them.",
+            )
+        }
         val (blended, usable) = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode)
         spotify.replaceItems(ownerId, playlistId, blended.map { it.track.uri })
         val now = Instant.now()

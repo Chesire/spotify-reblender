@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS app_user (
     last_login_at TIMESTAMP    NOT NULL
 );
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(1000);
+-- Whether other people may include this user (and so read their top tracks) in blends. On by default.
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS allow_blending BOOLEAN DEFAULT TRUE NOT NULL;
 
 -- One row per playlist the app manages.
 CREATE TABLE IF NOT EXISTS blend (

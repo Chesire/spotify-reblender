@@ -348,3 +348,22 @@ dialog.dialog .check-row input { width: 18px; height: 18px; accent-color: var(--
 /* ===== Sign-in ===== */
 .signin { justify-items: start; }
 @media (max-width: 599px) { .signin .btn { width: 100%; } }
+
+/* ===== Settings + M3 switch ===== */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); cursor: pointer; }
+.switch-row > span:first-child { display: grid; gap: var(--sp-1); }
+.setting-title { font: var(--md-title-medium); }
+.switch { position: relative; flex: none; display: inline-flex; min-height: var(--touch); align-items: center; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch .track {
+    width: 52px; height: 32px; border-radius: var(--md-shape-full); border: 2px solid var(--md-outline);
+    background: var(--md-surface-container-highest); display: flex; align-items: center; padding: 0 4px;
+    transition: background var(--md-duration-short) var(--md-ease), border-color var(--md-duration-short) var(--md-ease);
+}
+.switch .handle {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--md-outline);
+    transition: transform var(--md-duration-medium) var(--md-ease), width var(--md-duration-short) var(--md-ease), height var(--md-duration-short) var(--md-ease), background var(--md-duration-short) var(--md-ease);
+}
+.switch input:checked + .track { background: var(--md-primary); border-color: var(--md-primary); }
+.switch input:checked + .track .handle { width: 24px; height: 24px; background: var(--md-on-primary); transform: translateX(16px); }
+.switch input:focus-visible + .track { outline: 3px solid var(--md-primary); outline-offset: 2px; }

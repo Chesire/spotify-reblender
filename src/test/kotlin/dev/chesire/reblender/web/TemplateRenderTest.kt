@@ -126,11 +126,15 @@ class TemplateRenderTest {
                 "sharedModes" to SharedMode.entries,
                 "defaultSize" to 40,
                 "tracksPerPerson" to 50,
+                "allowBlending" to true,
             ),
         )
         assertContains(html, "href=\"/playlists/p1\"")
         assertContains(html, "Show breakdown")
         assertContains(html, "<dialog")
+        assertContains(html, "/account/blending")
+        assertContains(html, "data-confirm=")
+        assertFalse(html.contains("onsubmit="), "inline handlers would be blocked by the CSP")
         assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("index", html)
     }
