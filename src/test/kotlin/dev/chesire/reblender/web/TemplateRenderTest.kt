@@ -36,7 +36,7 @@ class TemplateRenderTest {
         )
         // Outside a web request, render context-relative links like @{/css/app.css} as-is.
         setLinkBuilder(object : StandardLinkBuilder() {
-            override fun computeContextPath(context: IExpressionContext, base: String, parameters: MutableMap<String, Any>): String = ""
+            override fun computeContextPath(context: IExpressionContext?, base: String?, parameters: MutableMap<String, Any>?): String = ""
         })
     }
 
