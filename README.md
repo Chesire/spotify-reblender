@@ -60,7 +60,7 @@ set -a; . ./.env; set +a   # same values as Docker, incl. a fixed TOKEN_ENCRYPTI
 ./gradlew bootRun
 ```
 
-Open <http://127.0.0.1:8080>, log in, then have your partner do the same (on their device or after you log out). Pick them from the list, choose the range, size and shared mode, and create the playlist. Use **Update** to rebuild it with current top tracks.
+Open <http://127.0.0.1:8080> and log in. To blend with others, have each of them log in too (on the same machine in a private window, unless you serve the app over HTTPS). Tick who to include (or nobody for a solo playlist), choose the range, size and shared mode, and create the playlist. Use **Update** to rebuild it with current top tracks.
 
 Tests: `./gradlew test` (covers the blend engine).
 
