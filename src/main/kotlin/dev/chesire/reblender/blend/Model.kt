@@ -6,6 +6,8 @@ data class Track(
     val uri: String,
     val name: String,
     val artists: List<String>,
+    /** Album cover, if Spotify sent one. Display only; not used for blending. */
+    val imageUrl: String? = null,
 )
 
 /** Which Spotify top-items window to use. These are the only three Spotify offers. */

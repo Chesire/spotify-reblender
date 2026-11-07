@@ -1,5 +1,7 @@
 package dev.chesire.reblender.users
 
+import dev.chesire.reblender.spotify.SpotifyImages
+
 import org.springframework.security.oauth2.core.user.OAuth2User
 
 /** Turns the Spotify `/me` profile (the OAuth2 user attributes) into an [AppUser]. */
@@ -19,8 +21,8 @@ object SpotifyProfile {
             .mapNotNull { it as? Map<*, *> }
             .mapNotNull { image ->
                 val url = image["url"] as? String ?: return@mapNotNull null
-                url to ((image["height"] as? Number)?.toInt() ?: 0)
+                url to (image["height"] as? Number)?.toInt()
             }
-        return (candidates.filter { it.second >= 64 }.minByOrNull { it.second } ?: candidates.firstOrNull())?.first
+        return SpotifyImages.pick(candidates)
     }
 }

@@ -58,3 +58,4 @@ CREATE TABLE IF NOT EXISTS blend_track (
     PRIMARY KEY (playlist_id, track_order),
     FOREIGN KEY (playlist_id) REFERENCES blend (playlist_id) ON DELETE CASCADE
 );
+ALTER TABLE blend_track ADD COLUMN IF NOT EXISTS image_url VARCHAR(1000);

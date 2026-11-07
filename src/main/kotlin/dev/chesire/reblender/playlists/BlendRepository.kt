@@ -32,6 +32,7 @@ data class BlendTrack(
     val name: String,
     val artists: List<String>,
     val contributors: List<String>,
+    val imageUrl: String? = null,
 )
 
 @Repository
@@ -114,8 +115,8 @@ class BlendRepository(private val jdbc: JdbcClient) {
         tracks.forEachIndexed { index, track ->
             jdbc.sql(
                 """
-                INSERT INTO blend_track (playlist_id, track_order, track_id, track_uri, track_name, artists, contributors)
-                VALUES (:id, :order, :trackId, :uri, :name, :artists, :contributors)
+                INSERT INTO blend_track (playlist_id, track_order, track_id, track_uri, track_name, artists, contributors, image_url)
+                VALUES (:id, :order, :trackId, :uri, :name, :artists, :contributors, :image)
                 """.trimIndent(),
             )
                 .param("id", playlistId)
@@ -125,6 +126,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
                 .param("name", track.name.take(500))
                 .param("artists", track.artists.joinToString(SEPARATOR).take(1000))
                 .param("contributors", track.contributors.joinToString(SEPARATOR))
+                .param("image", track.imageUrl?.takeIf { it.length <= 1000 })
                 .update()
         }
     }
@@ -139,6 +141,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
                     name = rs.getString("track_name"),
                     artists = rs.getString("artists").split(SEPARATOR).filter { it.isNotEmpty() },
                     contributors = rs.getString("contributors").split(SEPARATOR).filter { it.isNotEmpty() },
+                    imageUrl = rs.getString("image_url"),
                 )
             }
             .list()

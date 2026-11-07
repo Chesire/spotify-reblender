@@ -16,7 +16,19 @@ internal data class TrackDto(
     val uri: String? = null,
     val name: String = "",
     val artists: List<ArtistDto> = emptyList(),
+    val album: AlbumDto? = null,
     @SerialName("is_local") val isLocal: Boolean = false,
+)
+
+@Serializable
+internal data class AlbumDto(
+    val images: List<ImageDto> = emptyList(),
+)
+
+@Serializable
+internal data class ImageDto(
+    val url: String? = null,
+    val height: Int? = null,
 )
 
 @Serializable

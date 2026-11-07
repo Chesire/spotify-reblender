@@ -42,7 +42,15 @@ class SpotifyClient(
         val missingId = items.count { !it.isLocal && (it.id == null || it.uri == null) }
         val tracks = items
             .filter { !it.isLocal && it.id != null && it.uri != null }
-            .map { Track(id = it.id!!, uri = it.uri!!, name = it.name, artists = it.artists.map(ArtistDto::name)) }
+            .map {
+                Track(
+                    id = it.id!!,
+                    uri = it.uri!!,
+                    name = it.name,
+                    artists = it.artists.map(ArtistDto::name),
+                    imageUrl = SpotifyImages.pick(it.album?.images.orEmpty().mapNotNull { img -> img.url?.let { url -> url to img.height } }),
+                )
+            }
         log.info(
             "Top tracks for {} ({}): Spotify returned {} of {} requested; skipped {} local file(s) and {} without an ID; {} usable",
             spotifyId, range.spotifyValue, items.size, TOP_TRACKS_LIMIT, local, missingId, tracks.size,

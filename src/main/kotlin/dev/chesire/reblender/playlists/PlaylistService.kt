@@ -140,6 +140,7 @@ class PlaylistService(
         name = track.track.name,
         artists = track.track.artists,
         contributors = track.contributors.toList(),
+        imageUrl = track.track.imageUrl,
     )
 
     fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwner(ownerId)

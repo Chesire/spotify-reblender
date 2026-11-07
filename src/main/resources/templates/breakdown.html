@@ -72,6 +72,8 @@
         </p>
         <ol class="tracks" th:unless="${#lists.isEmpty(b.tracks)}">
             <li th:each="t : ${b.tracks}" th:classappend="${t.shared} ? 'shared'">
+                <img th:if="${t.imageUrl}" class="cover" th:src="${t.imageUrl}" alt="" loading="lazy" referrerpolicy="no-referrer">
+                <span th:unless="${t.imageUrl}" class="cover placeholder" aria-hidden="true">&#9835;</span>
                 <span class="pos" th:text="${t.position}">1</span>
                 <span class="song">
                     <span class="title" th:text="${t.name}">Song</span>

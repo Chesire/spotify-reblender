@@ -130,7 +130,7 @@ dialog.confirm h3 { margin-top: 0; font-size: 1.1rem; }
 /* Song list */
 .tracks { list-style: none; padding: 0; margin: 0; }
 .tracks li {
-    display: grid; grid-template-columns: 2rem 1fr auto; align-items: center; gap: 0.75rem;
+    display: grid; grid-template-columns: 2.75rem 1.5rem 1fr auto; align-items: center; gap: 0.75rem;
     padding: 0.55rem 0.6rem; border-radius: 8px;
 }
 .tracks li + li { margin-top: 2px; }
@@ -154,3 +154,5 @@ dialog.confirm h3 { margin-top: 0; font-size: 1.1rem; }
     opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .avatar.sm:hover::after { opacity: 1; transform: translate(-50%, 0); }
+.tracks .cover { width: 2.75rem; height: 2.75rem; border-radius: 6px; object-fit: cover; display: block; background: #2a2a2a; }
+.tracks .cover.placeholder { display: grid; place-items: center; color: var(--muted); font-size: 1.1rem; }

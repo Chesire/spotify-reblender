@@ -24,6 +24,8 @@ data class TrackView(
     val name: String,
     val artists: String,
     val contributors: List<MemberView>,
+    /** Album cover, or null for songs stored before covers were recorded. */
+    val imageUrl: String? = null,
 ) {
     val isShared: Boolean get() = contributors.size > 1
 }
@@ -72,6 +74,7 @@ data class Breakdown(
                     position = index + 1,
                     name = track.name,
                     artists = track.artists.joinToString(", "),
+                    imageUrl = track.imageUrl,
                     // Show contributors in member order so stacks look consistent.
                     contributors = track.contributors
                         .map { membersById[it] ?: unknown(it) }

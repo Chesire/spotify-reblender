@@ -60,7 +60,17 @@ class TemplateRenderTest {
     )
 
     private fun track(n: Int, title: String, artist: String, vararg who: String) =
-        BlendTrack("t$n", "spotify:track:t$n", title, listOf(artist), who.toList())
+        BlendTrack("t$n", "spotify:track:t$n", title, listOf(artist), who.toList(), imageUrl = if (n == 4) null else cover(n))
+
+    /** A small generated "album cover" so previews show artwork without network access (track 4 shows the placeholder). */
+    private fun cover(n: Int): String {
+        val hues = listOf(12, 200, 280, 40, 150, 330, 90, 220, 0, 260, 180, 60)
+        val h = hues[(n - 1) % hues.size]
+        return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>" +
+            "<rect width='64' height='64' fill='hsl($h,55%25,45%25)'/>" +
+            "<circle cx='${16 + (n * 7) % 32}' cy='${20 + (n * 11) % 24}' r='${10 + n % 8}' fill='hsl(${(h + 40) % 360},70%25,70%25)' fill-opacity='0.8'/>" +
+            "<rect x='0' y='44' width='64' height='20' fill='%23000' fill-opacity='0.25'/></svg>"
+    }
 
     private val tracks = listOf(
         track(1, "Midnight Static", "The Lanterns", "chesire", "sam", "alex"),
@@ -87,6 +97,8 @@ class TemplateRenderTest {
         assertContains(html, "data-name=\"Alex Morgan\"")
         assertContains(html, ">AM<") // initials for a member without a picture
         assertContains(html, "/playlists/p1/update")
+        assertContains(html, "class=\"cover\"")
+        assertContains(html, "cover placeholder") // track without artwork
         assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("breakdown", html)
     }
