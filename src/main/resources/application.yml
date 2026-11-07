@@ -1,14 +1,14 @@
 server:
   port: 8080
-  # Respect X-Forwarded-* headers when running behind a reverse proxy (e.g. TLS terminator).
-  forward-headers-strategy: framework
+  # X-Forwarded-* / Forwarded headers are ignored by default, so a client can't spoof its scheme, host or IP.
+  # Behind a reverse proxy that sets (and strips client-sent) forwarded headers, set FORWARD_HEADERS_STRATEGY=native.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
   servlet:
     session:
       cookie:
         http-only: true
         same-site: lax
-        # Set SESSION_COOKIE_SECURE=true when serving over HTTPS.
-        secure: ${SESSION_COOKIE_SECURE:false}
+        # "secure" is set in SessionCookieConfig: on when APP_BASE_URL is https, overridable with SESSION_COOKIE_SECURE.
 
 spring:
   application:

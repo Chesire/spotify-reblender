@@ -15,13 +15,21 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy
+import org.springframework.security.web.header.writers.StaticHeadersWriter
 
 @Configuration
 class SecurityConfig {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity, users: UserRepository): SecurityFilterChain {
+    fun securityFilterChain(
+        http: HttpSecurity,
+        users: UserRepository,
+        clientRegistrations: ClientRegistrationRepository,
+    ): SecurityFilterChain {
         http {
             authorizeHttpRequests {
                 authorize("/", permitAll)
@@ -33,13 +41,32 @@ class SecurityConfig {
             oauth2Login {
                 loginPage = "/"
                 authenticationSuccessHandler = LoginSuccessHandler(users)
+                // S6: PKCE on the authorization-code flow, as the OAuth 2.0 Security BCP recommends for all clients.
+                authorizationEndpoint {
+                    authorizationRequestResolver = pkceAuthorizationRequestResolver(clientRegistrations)
+                }
             }
             logout {
                 logoutSuccessUrl = "/"
             }
+            // S4: browser-enforced limits on what pages can load and send.
+            headers {
+                contentSecurityPolicy {
+                    policyDirectives = CONTENT_SECURITY_POLICY
+                }
+                referrerPolicy {
+                    policy = ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN
+                }
+                addHeaderWriter(StaticHeadersWriter("Permissions-Policy", PERMISSIONS_POLICY))
+            }
         }
         return http.build()
     }
+
+    private fun pkceAuthorizationRequestResolver(clientRegistrations: ClientRegistrationRepository) =
+        DefaultOAuth2AuthorizationRequestResolver(clientRegistrations, "/oauth2/authorization").apply {
+            setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce())
+        }
 
     /** Fails fast at startup if the key is missing, unreadable or malformed. */
     @Bean
@@ -73,4 +100,26 @@ class SecurityConfig {
                     .build(),
             )
         }
+
+    companion object {
+        /**
+         * Scripts and styles only from this app; images also from Spotify's CDNs (covers, profile pictures).
+         * Inline style *attributes* are allowed for per-member colours and bar widths; inline <style>/<script> are not.
+         */
+        const val CONTENT_SECURITY_POLICY =
+            "default-src 'self'; " +
+                "script-src 'self'; " +
+                "style-src 'self'; " +
+                "style-src-attr 'unsafe-inline'; " +
+                "img-src 'self' data: https://*.scdn.co https://*.spotifycdn.com; " +
+                "font-src 'self'; " +
+                "connect-src 'self'; " +
+                "object-src 'none'; " +
+                "base-uri 'none'; " +
+                "form-action 'self'; " +
+                "frame-ancestors 'none'"
+
+        const val PERMISSIONS_POLICY =
+            "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+    }
 }
