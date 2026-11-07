@@ -135,6 +135,8 @@ class HomeController(
             val outcome = playlists.delete(principal.name, playlistId, removeFromSpotify)
             val name = "\"${outcome.playlistName}\""
             when {
+                outcome.needsRelogin -> "Your Spotify login doesn't include permission to delete playlists yet. " +
+                    "Log out, log in again (Spotify will ask you to approve it), then delete $name again."
                 !removeFromSpotify -> "Stopped managing $name. It's still in your Spotify library."
                 outcome.removedFromSpotify -> "Deleted $name from the app and your Spotify library."
                 else -> "Removed $name from the app, but Spotify wouldn't let the app delete it " +

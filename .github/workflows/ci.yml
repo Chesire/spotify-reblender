@@ -147,7 +147,7 @@ jobs:
           location=$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/oauth2/authorization/spotify)
           echo "Redirect: $location"
           echo "$location" | grep -q "^https://accounts.spotify.com/authorize"
-          echo "$location" | grep -q "scope=user-top-read%20playlist-modify-private"
+          echo "$location" | grep -q "scope=user-top-read%20playlist-modify-private%20playlist-modify-public&"
           # S6: PKCE.
           echo "$location" | grep -q "code_challenge="
           echo "$location" | grep -q "code_challenge_method=S256"

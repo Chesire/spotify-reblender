@@ -76,7 +76,7 @@ How the tokens are protected:
 
 - **Encrypted at rest** with AES-256-GCM (`TokenCipher`). Each ciphertext is bound to its row (Spotify user ID), so a token copied into another row won't decrypt, and tampering is detected. The key is never stored in the database (see *Where the key lives* below). The app refuses to start without a valid key.
 - **Fails closed.** If Spring's storage format ever changes so a token can't be encrypted, the write is refused rather than stored in plaintext. A row that can't be decrypted (wrong key, tampering, or pre-encryption data) is deleted and that user is asked to log in again.
-- **Least privilege.** Only the `user-top-read` and `playlist-modify-private` scopes are requested.
+- **Least privilege.** Only `user-top-read`, `playlist-modify-private` and `playlist-modify-public` are requested. The last one is needed only to delete a playlist: Spotify's `DELETE /me/library` refuses with "Insufficient client scope" without it. The app never edits a playlist it didn't create.
 - **Never sent to the browser.** Tokens stay server-side; the browser only gets an HttpOnly, SameSite=Lax session cookie. It's marked Secure automatically when `APP_BASE_URL` is `https://` (force it either way with `SESSION_COOKIE_SECURE`).
 - **Container hardening.** It runs as a non-root user, with a read-only root filesystem and `no-new-privileges`. `/data` is only readable by the app user, and the port is bound to `127.0.0.1` by default.
 - **Short-lived anyway.** Access tokens last an hour; Spotify refresh tokens expire 6 months after login.

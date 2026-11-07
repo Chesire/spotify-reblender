@@ -32,10 +32,12 @@ spring:
             client-authentication-method: client_secret_basic
             # Spotify requires an exact match; loopback must use 127.0.0.1, not localhost.
             redirect-uri: ${APP_BASE_URL:http://127.0.0.1:8080}/login/oauth2/code/spotify
-            # Least privilege: read top tracks, create/replace the app's own private playlists. Nothing else.
+            # Read top tracks and create/replace the app's own private playlists. playlist-modify-public is only
+            # there because Spotify's DELETE /me/library refuses to remove a playlist without it.
             scope:
               - user-top-read
               - playlist-modify-private
+              - playlist-modify-public
         provider:
           spotify:
             authorization-uri: https://accounts.spotify.com/authorize

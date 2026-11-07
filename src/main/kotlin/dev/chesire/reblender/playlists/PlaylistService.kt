@@ -18,7 +18,13 @@ import java.time.Instant
  * Result of deleting a blend. [spotifyStatus] is null when Spotify wasn't asked (or succeeded), otherwise
  * the HTTP status Spotify refused with; [removedFromSpotify] says whether it's gone from the library.
  */
-data class DeleteOutcome(val playlistName: String, val removedFromSpotify: Boolean, val spotifyStatus: Int?)
+data class DeleteOutcome(
+    val playlistName: String,
+    val removedFromSpotify: Boolean,
+    val spotifyStatus: Int?,
+    /** The owner's stored login predates the scope needed to delete; the blend is kept so they can retry after logging in again. */
+    val needsRelogin: Boolean = false,
+)
 
 /** A created/updated blend plus how many usable top tracks each member had (to explain short playlists). */
 data class BlendOutcome(val blend: Blend, val usableTracks: Map<String, Int>)
@@ -138,6 +144,10 @@ class PlaylistService(
                 } else {
                     status = e.statusCode.value()
                     log.warn("Spotify refused to remove playlist {} ({}): {}", playlistId, status, e.responseBodyAsString)
+                    if (status == 403 && e.responseBodyAsString.contains("Insufficient client scope", ignoreCase = true)) {
+                        // Logged in before playlist-modify-public was requested. Keep the blend so a retry works.
+                        return DeleteOutcome(blend.playlistName, removedFromSpotify = false, spotifyStatus = status, needsRelogin = true)
+                    }
                 }
             }
         }
