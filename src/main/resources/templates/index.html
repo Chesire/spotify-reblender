@@ -79,7 +79,7 @@
                         <div class="segmented stack-compact">
                             <label th:each="m, i : ${sharedModes}" class="segment-option">
                                 <input type="radio" name="sharedMode" th:value="${m.name()}" th:checked="${i.first}">
-                                <span th:text="${m.label}">Mode</span>
+                                <span th:text="${m.option}" th:title="${m.label}">Mode</span>
                             </label>
                         </div>
                     </fieldset>

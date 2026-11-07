@@ -23,12 +23,12 @@ enum class TimeRange(val spotifyValue: String, val label: String, val window: St
 }
 
 /** What to do when the group shares more tracks than the shared budget allows. */
-enum class SharedMode(val label: String) {
+enum class SharedMode(val label: String, val option: String) {
     /** Shared songs are capped by group size: 1/3 for 2 people up to 4/5 for 5 (see [BlendEngine.sharedShare]). */
-    CAPPED("Cap shared songs by group size"),
+    CAPPED("Cap shared songs by group size", "Cap by group size"),
 
     /** Shared songs may fill the playlist. */
-    FILL("Let shared songs fill it"),
+    FILL("Let shared songs fill it", "Let them fill it"),
 }
 
 /** One person in a blend, with their ranked top tracks (best first). */

@@ -212,7 +212,10 @@ img { max-width: 100%; }
 @media (max-width: 599px) { .form-actions .btn { width: 100%; } }
 
 details.help { font: var(--md-body-medium); color: var(--md-on-surface-variant); }
-details.help summary { cursor: pointer; width: fit-content; min-height: var(--touch); display: flex; align-items: center; }
+details.help summary { cursor: pointer; width: fit-content; min-height: var(--touch); display: flex; align-items: center; gap: var(--sp-2); list-style: none; font: var(--md-label-large); color: var(--md-primary); }
+details.help summary::-webkit-details-marker { display: none; }
+details.help summary::before { content: ""; width: 0; height: 0; border-left: 6px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent; transition: transform var(--md-duration-short) var(--md-ease); }
+details.help[open] summary::before { transform: rotate(90deg); }
 details.help p { margin-top: var(--sp-2); }
 
 /* ===== Lists of tiles (blends on home, songs on breakdown) ===== */
@@ -221,7 +224,8 @@ details.help p { margin-top: var(--sp-2); }
 
 /* Blend tile */
 .blend-tile { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); }
-.blend-tile .title { font: var(--md-title-medium); text-decoration: none; display: block; overflow-wrap: anywhere; }
+.blend-tile .title { font: var(--md-title-medium); text-decoration: none; display: block; overflow-wrap: anywhere; padding: var(--sp-2) 0; }
+.blend-tile .meta { margin-top: calc(-1 * var(--sp-1)); }
 .blend-tile .title:hover { text-decoration: underline; }
 .blend-tile .meta { font: var(--md-body-medium); color: var(--md-on-surface-variant); }
 .tile-actions { display: flex; align-items: center; gap: var(--sp-1); }
@@ -294,7 +298,7 @@ dialog.dialog .check-row input { width: 18px; height: 18px; accent-color: var(--
 .avatar.sm .initials { font: var(--md-label-small); }
 .stack { display: flex; }
 .stack .avatar { box-shadow: 0 0 0 2px var(--c), 0 0 0 4px var(--md-surface-container-high); transition: transform var(--md-duration-short) var(--md-ease); }
-.stack .avatar + .avatar { margin-left: -2px; }
+.stack { gap: var(--sp-1); }
 .stack .avatar:hover, .stack .avatar:focus-visible { transform: translateY(-3px) scale(1.12); z-index: 2; }
 /* Plain tooltip (M3) with the member's name: hover on desktop, tap (focus) on touch screens */
 .avatar.sm::after {
@@ -320,7 +324,7 @@ dialog.dialog .check-row input { width: 18px; height: 18px; accent-color: var(--
     transition: background var(--md-duration-medium) var(--md-ease), transform var(--md-duration-medium) var(--md-ease);
 }
 .member-name {
-    max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; padding: 0; font: var(--md-label-large);
+    max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; padding: 0; font: var(--md-label-large); color: var(--md-on-surface);
     transition: max-width var(--md-duration-medium) var(--md-ease), opacity var(--md-duration-short) var(--md-ease), padding var(--md-duration-medium) var(--md-ease);
 }
 .member:hover, .member:focus-visible { background: var(--md-surface-container-highest); transform: translateY(-2px); }
@@ -328,7 +332,7 @@ dialog.dialog .check-row input { width: 18px; height: 18px; accent-color: var(--
 .member:focus-visible { outline: 3px solid var(--md-primary); outline-offset: 2px; }
 /* No hover on touch screens: always show names */
 @media (hover: none) {
-    .member .member-name { max-width: 16rem; opacity: 1; padding: 0 var(--sp-4) 0 var(--sp-3); }
+    .member .member-name { max-width: 16rem; opacity: 1; padding: 0 var(--sp-4) 0 var(--sp-3); transition: none; }
 }
 
 /* ===== Balance ===== */
