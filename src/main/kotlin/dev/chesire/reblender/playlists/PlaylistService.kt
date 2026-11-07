@@ -6,6 +6,7 @@ import dev.chesire.reblender.blend.Participant
 import dev.chesire.reblender.blend.SharedMode
 import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.spotify.SpotifyClient
+import dev.chesire.reblender.users.AppUser
 import dev.chesire.reblender.users.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -83,6 +84,7 @@ class PlaylistService(
             updatedAt = now,
         )
         blends.insert(blend)
+        blends.replaceTracks(playlist.id, blended.map(::toStored))
         return BlendOutcome(blend, usable)
     }
 
@@ -94,6 +96,7 @@ class PlaylistService(
         spotify.replaceItems(ownerId, playlistId, blended.map { it.track.uri })
         val now = Instant.now()
         blends.markRefreshed(playlistId, blended.size, now)
+        blends.replaceTracks(playlistId, blended.map(::toStored))
         return BlendOutcome(blend.copy(trackCount = blended.size, updatedAt = now), usable)
     }
 
@@ -123,6 +126,21 @@ class PlaylistService(
         blends.delete(playlistId, ownerId)
         return DeleteOutcome(blend.playlistName, removed, status)
     }
+
+    /** Everything the breakdown page needs, or null if it isn't the owner's playlist. */
+    fun breakdown(ownerId: String, playlistId: String): Breakdown? {
+        val blend = blends.findByIdAndOwner(playlistId, ownerId) ?: return null
+        val members = blend.memberIds.map { id -> users.findById(id) ?: AppUser(id, id) }
+        return Breakdown.of(blend, members, blends.findTracks(playlistId))
+    }
+
+    private fun toStored(track: BlendedTrack) = BlendTrack(
+        trackId = track.track.id,
+        uri = track.track.uri,
+        name = track.track.name,
+        artists = track.track.artists,
+        contributors = track.contributors.toList(),
+    )
 
     fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwner(ownerId)
 

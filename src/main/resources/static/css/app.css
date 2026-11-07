@@ -80,3 +80,77 @@ dialog.confirm::backdrop { background: rgba(0, 0, 0, 0.6); }
 dialog.confirm h3 { margin-top: 0; font-size: 1.1rem; }
 .dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1rem; }
 .button.danger { background: var(--err); color: #fff; }
+
+/* ---- Breakdown page ---- */
+.back { display: inline-block; color: var(--muted); text-decoration: none; margin-bottom: 0.5rem; }
+.back:hover { color: var(--text); }
+.playlist-link { font-weight: 600; text-decoration: none; }
+.playlist-link:hover { text-decoration: underline; }
+.breakdown-head h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+.head-actions { display: flex; gap: 0.75rem; align-items: center; margin-top: 1rem; }
+.button.secondary { background: #2a2a2a; color: var(--text); border: 1px solid #3a3a3a; }
+
+/* Avatars */
+.avatar {
+    --c: #6b6b6b;
+    position: relative; display: inline-grid; place-items: center; flex: none;
+    border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--c);
+}
+.avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.avatar .initials { color: #111; font-weight: 700; letter-spacing: 0.02em; }
+.avatar.lg { width: 3.25rem; height: 3.25rem; }
+.avatar.lg .initials { font-size: 1.1rem; }
+.avatar.sm { width: 1.75rem; height: 1.75rem; }
+.avatar.sm .initials { font-size: 0.7rem; }
+
+/* Members: avatar pills that slide open to show the name on hover/focus */
+.members { list-style: none; display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0; margin: 1.25rem 0 0; }
+.member {
+    display: flex; align-items: center; border-radius: 999px; padding: 0.25rem;
+    background: #2a2a2a; cursor: default; outline: none;
+    transition: background 0.25s ease, transform 0.25s ease;
+}
+.member-name {
+    max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; padding: 0;
+    transition: max-width 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+}
+.member:hover, .member:focus-visible { background: #333; transform: translateY(-2px); }
+.member:hover .member-name, .member:focus-visible .member-name { max-width: 16rem; opacity: 1; padding: 0 0.9rem 0 0.6rem; }
+
+/* Balance bar + legend */
+.balance-bar { display: flex; height: 0.85rem; border-radius: 999px; overflow: hidden; background: #2a2a2a; gap: 2px; }
+.segment { --c: #6b6b6b; background: var(--c); min-width: 4px; }
+.segment.shared, .swatch.shared {
+    background: repeating-linear-gradient(45deg, #f0f0f0 0 4px, #bdbdbd 4px 8px);
+}
+.legend { list-style: none; padding: 0; margin: 0.9rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.legend li { display: flex; align-items: center; gap: 0.4rem; }
+.swatch { --c: #6b6b6b; width: 0.8rem; height: 0.8rem; border-radius: 3px; background: var(--c); display: inline-block; }
+
+/* Song list */
+.tracks { list-style: none; padding: 0; margin: 0; }
+.tracks li {
+    display: grid; grid-template-columns: 2rem 1fr auto; align-items: center; gap: 0.75rem;
+    padding: 0.55rem 0.6rem; border-radius: 8px;
+}
+.tracks li + li { margin-top: 2px; }
+.tracks li:hover { background: #262626; }
+.tracks li.shared { background: rgba(240, 240, 240, 0.05); }
+.tracks .pos { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.tracks .song { display: flex; flex-direction: column; min-width: 0; }
+.tracks .song > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tracks .who { display: flex; align-items: center; gap: 0.6rem; }
+.tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border: 1px solid #3a3a3a; border-radius: 999px; padding: 0.1rem 0.5rem; }
+.stack { display: flex; }
+.stack .avatar { box-shadow: 0 0 0 2px var(--c), 0 0 0 4px var(--card); transition: transform 0.2s ease; }
+.stack .avatar + .avatar { margin-left: -0.45rem; }
+.stack .avatar:hover { transform: translateY(-3px) scale(1.12); z-index: 2; }
+
+/* Name tooltip on small avatars */
+.avatar.sm::after {
+    content: attr(data-name); position: absolute; bottom: calc(100% + 0.5rem); left: 50%;
+    transform: translate(-50%, 0.25rem); background: #f0f0f0; color: #111; font-size: 0.75rem; font-weight: 600;
+    padding: 0.2rem 0.5rem; border-radius: 6px; white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.avatar.sm:hover::after { opacity: 1; transform: translate(-50%, 0); }

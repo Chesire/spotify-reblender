@@ -25,6 +25,15 @@ data class Blend(
     val updatedAt: Instant,
 )
 
+/** One song in the last build of a blend, and who it came from (more than one contributor = shared). */
+data class BlendTrack(
+    val trackId: String,
+    val uri: String,
+    val name: String,
+    val artists: List<String>,
+    val contributors: List<String>,
+)
+
 @Repository
 class BlendRepository(private val jdbc: JdbcClient) {
 
@@ -98,6 +107,42 @@ class BlendRepository(private val jdbc: JdbcClient) {
             .map(::withMembers)
             .orElse(null)
 
+    /** Replaces the stored song list for a blend with the latest build, in playlist order. */
+    @Transactional
+    fun replaceTracks(playlistId: String, tracks: List<BlendTrack>) {
+        jdbc.sql("DELETE FROM blend_track WHERE playlist_id = :id").param("id", playlistId).update()
+        tracks.forEachIndexed { index, track ->
+            jdbc.sql(
+                """
+                INSERT INTO blend_track (playlist_id, track_order, track_id, track_uri, track_name, artists, contributors)
+                VALUES (:id, :order, :trackId, :uri, :name, :artists, :contributors)
+                """.trimIndent(),
+            )
+                .param("id", playlistId)
+                .param("order", index)
+                .param("trackId", track.trackId)
+                .param("uri", track.uri)
+                .param("name", track.name.take(500))
+                .param("artists", track.artists.joinToString(SEPARATOR).take(1000))
+                .param("contributors", track.contributors.joinToString(SEPARATOR))
+                .update()
+        }
+    }
+
+    fun findTracks(playlistId: String): List<BlendTrack> =
+        jdbc.sql("SELECT * FROM blend_track WHERE playlist_id = :id ORDER BY track_order")
+            .param("id", playlistId)
+            .query { rs, _ ->
+                BlendTrack(
+                    trackId = rs.getString("track_id"),
+                    uri = rs.getString("track_uri"),
+                    name = rs.getString("track_name"),
+                    artists = rs.getString("artists").split(SEPARATOR).filter { it.isNotEmpty() },
+                    contributors = rs.getString("contributors").split(SEPARATOR).filter { it.isNotEmpty() },
+                )
+            }
+            .list()
+
     /** Deletes one blend (members cascade). Returns false if it wasn't the owner's. */
     fun delete(playlistId: String, ownerId: String): Boolean =
         jdbc.sql("DELETE FROM blend WHERE playlist_id = :id AND owner_id = :owner")
@@ -112,6 +157,11 @@ class BlendRepository(private val jdbc: JdbcClient) {
         )
             .param("id", spotifyId)
             .update()
+    }
+
+    private companion object {
+        /** ASCII unit separator: can't appear in names, so lists round-trip safely. */
+        const val SEPARATOR = "\u001F"
     }
 
     private fun withMembers(blend: Blend): Blend {

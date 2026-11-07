@@ -82,7 +82,7 @@
             <ul class="list" th:unless="${#lists.isEmpty(playlists)}">
                 <li th:each="row : ${playlists}">
                     <div>
-                        <a th:href="${row.blend.playlistUrl}" target="_blank" rel="noopener"
+                        <a th:href="@{/playlists/{id}(id=${row.blend.playlistId})}" class="playlist-link"
                            th:text="${row.blend.playlistName}">Playlist</a>
                         <div class="muted small">
                             <span th:text="${row.withLabel}">with someone</span>
@@ -99,6 +99,7 @@
                         <details class="menu">
                             <summary class="menu-button" aria-label="More actions" title="More actions">&#8943;</summary>
                             <div class="menu-items" role="menu">
+                                <a role="menuitem" th:href="@{/playlists/{id}(id=${row.blend.playlistId})}">Show breakdown</a>
                                 <a role="menuitem" th:href="${row.blend.playlistUrl}" target="_blank" rel="noopener">Open in Spotify</a>
                                 <button type="button" role="menuitem" class="danger"
                                         th:data-dialog="${'delete-' + row.blend.playlistId}">Delete&hellip;</button>

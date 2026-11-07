@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS app_user (
     display_name  VARCHAR(300) NOT NULL,
     last_login_at TIMESTAMP    NOT NULL
 );
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(1000);
 
 -- One row per playlist the app manages.
 CREATE TABLE IF NOT EXISTS blend (
@@ -41,5 +42,19 @@ CREATE TABLE IF NOT EXISTS blend_member (
     spotify_id   VARCHAR(200) NOT NULL,
     member_order INT          NOT NULL,
     PRIMARY KEY (playlist_id, spotify_id),
+    FOREIGN KEY (playlist_id) REFERENCES blend (playlist_id) ON DELETE CASCADE
+);
+
+-- The songs in the last build of each blend, in playlist order, and who each came from.
+-- Powers the breakdown page; rewritten on every create/update.
+CREATE TABLE IF NOT EXISTS blend_track (
+    playlist_id  VARCHAR(100)  NOT NULL,
+    track_order  INT           NOT NULL,
+    track_id     VARCHAR(100)  NOT NULL,
+    track_uri    VARCHAR(200)  NOT NULL,
+    track_name   VARCHAR(500)  NOT NULL,
+    artists      VARCHAR(1000) NOT NULL,
+    contributors VARCHAR(1100) NOT NULL,
+    PRIMARY KEY (playlist_id, track_order),
     FOREIGN KEY (playlist_id) REFERENCES blend (playlist_id) ON DELETE CASCADE
 );

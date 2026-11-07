@@ -8,7 +8,7 @@ import dev.chesire.reblender.playlists.BlendOutcome
 import dev.chesire.reblender.playlists.PlaylistService
 import dev.chesire.reblender.spotify.ReloginRequiredException
 import dev.chesire.reblender.users.AccountService
-import dev.chesire.reblender.users.AppUser
+import dev.chesire.reblender.users.SpotifyProfile
 import dev.chesire.reblender.users.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -45,7 +45,7 @@ class HomeController(
         val me = principal.name
         if (users.findById(me) == null) {
             // Session outlived the database (e.g. the volume was reset): re-record the user.
-            users.upsert(AppUser(me, principal.getAttribute<String>("display_name")?.takeIf { it.isNotBlank() } ?: me))
+            users.upsert(SpotifyProfile.toAppUser(me, principal))
         }
         val allUsers = users.findAll()
         val names = allUsers.associate { it.spotifyId to it.displayName }
@@ -84,17 +84,37 @@ class HomeController(
         return "redirect:/"
     }
 
+    /** Who each song came from, and the balance between members. */
+    @GetMapping("/playlists/{playlistId}")
+    fun breakdown(
+        @AuthenticationPrincipal principal: OAuth2User,
+        @PathVariable playlistId: String,
+        model: Model,
+        redirect: RedirectAttributes,
+    ): String {
+        val breakdown = playlists.breakdown(principal.name, playlistId)
+        if (breakdown == null) {
+            redirect.addFlashAttribute("error", "That playlist isn't one of yours.")
+            return "redirect:/"
+        }
+        model.addAttribute("b", breakdown)
+        model.addAttribute("updatedLabel", UPDATED_FORMAT.format(breakdown.blend.updatedAt))
+        return "breakdown"
+    }
+
     @PostMapping("/playlists/{playlistId}/update")
     fun update(
         @AuthenticationPrincipal principal: OAuth2User,
         @PathVariable playlistId: String,
+        @RequestParam(required = false) returnTo: String?,
         redirect: RedirectAttributes,
     ): String {
         handle(principal.name, redirect) {
             val outcome = playlists.update(principal.name, playlistId)
             "Updated \"${outcome.blend.playlistName}\" with ${outcome.blend.trackCount} songs." + shortNote(outcome)
         }
-        return "redirect:/"
+        // Only ever redirect to our own pages.
+        return if (returnTo == "breakdown") "redirect:/playlists/$playlistId" else "redirect:/"
     }
 
     @PostMapping("/playlists/{playlistId}/delete")

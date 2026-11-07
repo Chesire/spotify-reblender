@@ -32,6 +32,22 @@ jobs:
       - name: Build and run tests
         run: ./gradlew build --no-daemon
 
+      - name: Print page previews
+        if: always()
+        run: |
+          for f in build/previews/*.b64; do
+            [ -f "$f" ] || continue
+            echo "PREVIEW $(basename "$f" .b64) $(cat "$f")"
+          done
+
+      - name: Upload page previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-previews
+          path: build/previews/*.html
+          if-no-files-found: ignore
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

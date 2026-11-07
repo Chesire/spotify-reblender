@@ -23,11 +23,7 @@ class LoginSuccessHandler(
         response: HttpServletResponse,
         authentication: Authentication,
     ) {
-        val principal = authentication.principal as? OAuth2User
-        val displayName = principal?.getAttribute<String>("display_name")
-            ?.takeIf { it.isNotBlank() }
-            ?: authentication.name
-        users.upsert(AppUser(spotifyId = authentication.name, displayName = displayName))
+        users.upsert(SpotifyProfile.toAppUser(authentication.name, authentication.principal as? OAuth2User))
         super.onAuthenticationSuccess(request, response, authentication)
     }
 }

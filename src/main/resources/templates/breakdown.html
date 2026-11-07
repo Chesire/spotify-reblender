@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${b.blend.playlistName} + ' - Reblender'">Breakdown - Reblender</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<main>
+    <a th:href="@{/}" class="back">&larr; All blends</a>
+
+    <p th:if="${message}" class="flash ok" th:text="${message}"></p>
+    <p th:if="${error}" class="flash err" th:text="${error}"></p>
+
+    <section class="card breakdown-head">
+        <h1 th:text="${b.blend.playlistName}">Playlist</h1>
+        <p class="muted small">
+            <span th:text="${b.blend.timeRange.label}">range</span> (<span th:text="${b.blend.timeRange.window}">window</span>)
+            &middot; <span th:text="${b.blend.trackCount}">0</span>/<span th:text="${b.blend.size}">0</span> songs
+            &middot; <span th:text="${b.blend.sharedMode.label}">mode</span>
+            &middot; updated <span th:text="${updatedLabel}">date</span>
+        </p>
+
+        <ul class="members" aria-label="People in this blend">
+            <li th:each="m : ${b.members}" class="member" tabindex="0">
+                <th:block th:replace="~{fragments/avatar :: avatar(${m}, 'lg')}"></th:block>
+                <span class="member-name">
+                    <span th:text="${m.name}">Name</span><span th:if="${m.owner}" class="muted"> (you)</span>
+                </span>
+            </li>
+        </ul>
+
+        <div class="head-actions">
+            <a class="button small" th:href="${b.blend.playlistUrl}" target="_blank" rel="noopener">Open in Spotify</a>
+            <form th:action="@{/playlists/{id}/update(id=${b.blend.playlistId})}" method="post">
+                <input type="hidden" name="returnTo" value="breakdown">
+                <button type="submit" class="button small secondary">Update</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card" th:unless="${#lists.isEmpty(b.tracks)}">
+        <h2>Balance</h2>
+        <div class="balance-bar" role="img"
+             th:attr="aria-label=${'Shared ' + b.sharedPercent + ' percent'}">
+            <span th:if="${b.sharedTotal > 0}" class="segment shared" th:style="${'flex:' + b.sharedTotal}"></span>
+            <span th:each="m : ${b.members}" th:if="${m.ownCount > 0}" class="segment"
+                  th:style="${'flex:' + m.ownCount + ';--c:' + m.colour}"></span>
+        </div>
+        <ul class="legend">
+            <li th:if="${b.sharedTotal > 0}">
+                <span class="swatch shared"></span>
+                <strong>Shared</strong> <span th:text="${b.sharedTotal}">0</span>
+                <span class="muted small" th:text="'(' + ${b.sharedPercent} + '%)'">(0%)</span>
+            </li>
+            <li th:each="m : ${b.members}">
+                <span class="swatch" th:style="${'--c:' + m.colour}"></span>
+                <strong th:text="${m.name}">Name</strong>
+                <span th:text="${m.ownCount}">0</span> own
+                <span class="muted small" th:text="'(' + ${b.ownPercent(m)} + '%)'">(0%)</span>
+                <span class="muted small" th:if="${m.sharedCount > 0}" th:text="'· in ' + ${m.sharedCount} + ' shared'">· in 0 shared</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card">
+        <h2>Songs</h2>
+        <p th:if="${#lists.isEmpty(b.tracks)}" class="muted">
+            No breakdown recorded yet. Press <strong>Update</strong> to rebuild the playlist and record who each song came from.
+        </p>
+        <ol class="tracks" th:unless="${#lists.isEmpty(b.tracks)}">
+            <li th:each="t : ${b.tracks}" th:classappend="${t.shared} ? 'shared'">
+                <span class="pos" th:text="${t.position}">1</span>
+                <span class="song">
+                    <span class="title" th:text="${t.name}">Song</span>
+                    <span class="muted small" th:text="${t.artists}">Artist</span>
+                </span>
+                <span class="who">
+                    <span th:if="${t.shared}" class="tag">Shared</span>
+                    <span class="stack">
+                        <th:block th:each="m : ${t.contributors}"><th:block
+                                th:replace="~{fragments/avatar :: avatar(${m}, 'sm')}"></th:block></th:block>
+                    </span>
+                </span>
+            </li>
+        </ol>
+    </section>
+</main>
+</body>
+</html>
