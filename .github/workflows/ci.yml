@@ -35,9 +35,12 @@ jobs:
       - name: Print page previews
         if: always()
         run: |
+          ls -la build/previews || true
+          # Chunked: very long log lines get dropped from the GitHub log.
           for f in build/previews/*.b64; do
             [ -f "$f" ] || continue
-            echo "PREVIEW $(basename "$f" .b64) $(cat "$f")"
+            name=$(basename "$f" .b64)
+            fold -w 4000 "$f" | awk -v n="$name" '{ print "PREVIEW " n " " NR " " $0 }'
           done
 
       - name: Upload page previews
