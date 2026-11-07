@@ -69,7 +69,7 @@ Tests: `./gradlew test` (covers the blend engine).
 An H2 database file (`./data/` locally, the `reblender-data` volume in Docker) holds:
 
 - `oauth2_authorized_client`: Spotify access and refresh tokens, so the app can read other members' top tracks when they're not logged in.
-- `app_user`: everyone who has logged in (Spotify ID and display name).
+- `app_user`: everyone who has logged in (Spotify ID, display name, profile picture URL and whether they allow being included in blends).
 - `blend` / `blend_member`: each managed playlist, its settings and who's in it.
 
 How the tokens are protected:
@@ -77,9 +77,14 @@ How the tokens are protected:
 - **Encrypted at rest** with AES-256-GCM (`TokenCipher`). Each ciphertext is bound to its row (Spotify user ID), so a token copied into another row won't decrypt, and tampering is detected. The key is never stored in the database (see *Where the key lives* below). The app refuses to start without a valid key.
 - **Fails closed.** If Spring's storage format ever changes so a token can't be encrypted, the write is refused rather than stored in plaintext. A row that can't be decrypted (wrong key, tampering, or pre-encryption data) is deleted and that user is asked to log in again.
 - **Least privilege.** Only the `user-top-read` and `playlist-modify-private` scopes are requested.
-- **Never sent to the browser.** Tokens stay server-side; the browser only gets an HttpOnly, SameSite=Lax session cookie (set `SESSION_COOKIE_SECURE=true` behind HTTPS).
+- **Never sent to the browser.** Tokens stay server-side; the browser only gets an HttpOnly, SameSite=Lax session cookie. It's marked Secure automatically when `APP_BASE_URL` is `https://` (force it either way with `SESSION_COOKIE_SECURE`).
 - **Container hardening.** It runs as a non-root user, with a read-only root filesystem and `no-new-privileges`. `/data` is only readable by the app user, and the port is bound to `127.0.0.1` by default.
 - **Short-lived anyway.** Access tokens last an hour; Spotify refresh tokens expire 6 months after login.
+- **Login uses PKCE** (S256) on top of the client secret.
+- **Browser hardening.** A Content-Security-Policy allows scripts and styles only from the app itself and images only from the app and Spotify's CDNs; links and images from Spotify are only used if they're `https://`. Pages can't be framed, and a strict Referrer-Policy and Permissions-Policy are set.
+- **Behind a reverse proxy.** `X-Forwarded-*` headers are ignored unless you set `FORWARD_HEADERS_STRATEGY=native`. Only do that when the proxy sets those headers itself and strips any the client sent.
+- **Opting out.** Everyone has a "Let others include me in blends" switch (on by default). Turning it off hides you from the partner list and stops any blend that includes you from being created or updated, so the app won't read your top tracks for someone else.
+- **Ended sessions.** If your stored login is deleted (for example "Forget me" in another browser), any other session you had is logged out on its next request.
 - **Forget me.** The "Forget me" button deletes your stored tokens, your user record and every blend you're part of. To also revoke the app on Spotify's side, remove it at <https://www.spotify.com/account/apps/>.
 
 ### Where the key lives (pick one)

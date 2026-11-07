@@ -4,3 +4,8 @@ build
 data
 .env
 .idea
+# Never send key material to the Docker build context (S10).
+secrets
+**/secrets
+**/*.key
+**/*.cred
