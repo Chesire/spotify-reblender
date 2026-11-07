@@ -63,7 +63,7 @@ class HomeController(
         model.addAttribute("timeRanges", TimeRange.entries)
         model.addAttribute("sharedModes", SharedMode.entries)
         model.addAttribute("defaultSize", DEFAULT_SIZE)
-        model.addAttribute("maxSize", PlaylistService.MAX_SIZE)
+        model.addAttribute("tracksPerPerson", BlendEngine.TRACKS_PER_PERSON)
         return "index"
     }
 

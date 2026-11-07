@@ -33,9 +33,12 @@ class PlaylistService(
         require(partners.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
             "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
         }
-        require(size in BlendEngine.MIN_SIZE..MAX_SIZE) { "Size must be between ${BlendEngine.MIN_SIZE} and $MAX_SIZE." }
-
         val memberIds = listOf(ownerId) + partners
+        val allowed = BlendEngine.sizeRange(memberIds.size)
+        require(size in allowed) {
+            "With ${memberIds.size} ${if (memberIds.size == 1) "person" else "people"} the playlist must have " +
+                "between ${allowed.first} and ${allowed.last} songs."
+        }
         val names = memberIds.map { id ->
             users.findById(id)?.displayName
                 ?: throw IllegalArgumentException(if (id == ownerId) "Unknown user. Log out and in again." else "Someone you picked hasn't logged in yet.")
@@ -98,9 +101,6 @@ class PlaylistService(
     }
 
     companion object {
-        /** Spotify's 100-item limit for a single replace. */
-        const val MAX_SIZE = 100
-
         /** "A", "A & B", "A, B & C" (or with "and" for prose). */
         fun joinNames(names: List<String>, conjunction: String = "&"): String = when (names.size) {
             0 -> ""

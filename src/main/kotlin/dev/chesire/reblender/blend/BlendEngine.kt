@@ -22,8 +22,13 @@ import kotlin.math.floor
  */
 object BlendEngine {
 
-    const val MIN_SIZE = 2
     const val MAX_PARTICIPANTS = 5
+
+    /** Spotify returns at most 50 top tracks per person, so a playlist can hold at most 50 per person. */
+    const val TRACKS_PER_PERSON = 50
+
+    /** Allowed playlist sizes for a group: at least one song per person, at most [TRACKS_PER_PERSON] each. */
+    fun sizeRange(participantCount: Int): IntRange = participantCount..participantCount * TRACKS_PER_PERSON
 
     /** Target fraction of the playlist that shared songs may take, by group size. */
     fun sharedShare(participantCount: Int): Double = when (participantCount) {
@@ -35,8 +40,12 @@ object BlendEngine {
     }
 
     fun blend(participants: List<Participant>, size: Int, sharedMode: SharedMode): List<BlendedTrack> {
-        require(size >= MIN_SIZE) { "Playlist size must be at least $MIN_SIZE" }
         require(participants.size in 1..MAX_PARTICIPANTS) { "A blend needs 1 to $MAX_PARTICIPANTS people" }
+        val allowed = sizeRange(participants.size)
+        require(size in allowed) {
+            "With ${participants.size} ${if (participants.size == 1) "person" else "people"} the playlist must have " +
+                "between ${allowed.first} and ${allowed.last} songs"
+        }
         require(participants.map { it.id }.toSet().size == participants.size) { "Each person can only be in a blend once" }
 
         val people = participants.map { it.copy(tracks = it.tracks.distinctBy(Track::id)) }

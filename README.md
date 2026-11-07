@@ -10,7 +10,7 @@ Blend often adds random recommendations or lets one person dominate. Reblender o
 
 A blend is you plus **0–4 other people** who have logged in. With nobody else, you get a playlist of your own top tracks (handy for testing on your own).
 
-Inputs: everyone's top 50 tracks for the chosen range, a size N (2–100), and a shared-songs mode.
+Inputs: everyone's top 50 tracks for the chosen range, a size N, and a shared-songs mode. N can be anything from **1 song per person up to 50 per person** (1–50 solo, 2–100 for two, up to 5–250 for five), since Spotify gives at most 50 top tracks per person. Playlists over 100 songs are written to Spotify in batches of 100.
 
 1. **Shared songs** are songs in two or more people's top lists. Songs shared by **everyone** come first, then by one fewer person, and so on down to pairs. Within a tier they're ranked by average position.
 2. **Shared budget** (*Cap shared songs by group size*, the default):

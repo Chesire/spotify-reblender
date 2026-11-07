@@ -253,8 +253,37 @@ class BlendEngineTest {
     }
 
     @Test
-    fun `size below two is rejected`() {
+    fun `size range is one to fifty songs per person`() {
+        assertEquals(1..50, BlendEngine.sizeRange(1))
+        assertEquals(2..100, BlendEngine.sizeRange(2))
+        assertEquals(5..250, BlendEngine.sizeRange(5))
+    }
+
+    @Test
+    fun `size below the number of people is rejected`() {
         assertFailsWith<IllegalArgumentException> { blend2(tracks("a", 5), tracks("b", 5), 1) }
+    }
+
+    @Test
+    fun `size above fifty per person is rejected`() {
+        assertFailsWith<IllegalArgumentException> { blend2(tracks("a", 50), tracks("b", 50), 101) }
+        assertFailsWith<IllegalArgumentException> {
+            BlendEngine.blend(listOf(p("a", tracks("a", 50))), 51, SharedMode.CAPPED)
+        }
+    }
+
+    @Test
+    fun `a single song solo playlist is allowed`() {
+        val result = BlendEngine.blend(listOf(p("a", tracks("a", 50))), 1, SharedMode.CAPPED)
+        assertEquals(listOf("a1"), result.map { it.track.id })
+    }
+
+    @Test
+    fun `five people can fill the maximum playlist`() {
+        val people = (1..5).map { p("u$it", tracks("u${it}_", 50)) }
+        val result = BlendEngine.blend(people, 250, SharedMode.CAPPED)
+        assertEquals(250, result.size)
+        people.forEach { assertEquals(50, result.soloOf(it.id)) }
     }
 
     @Test

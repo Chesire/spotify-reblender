@@ -60,16 +60,23 @@ class SpotifyClient(
         return CreatedPlaylist(playlist.id, url)
     }
 
-    /** Replaces the whole playlist contents (max 100 items per request; we never send more). */
+    /**
+     * Replaces the whole playlist contents. Spotify takes at most 100 items per request, so the first
+     * batch replaces and any further batches are appended in order.
+     */
     fun replaceItems(ownerId: String, playlistId: String, uris: List<String>) {
-        require(uris.size <= MAX_ITEMS_PER_REQUEST) { "Spotify accepts at most $MAX_ITEMS_PER_REQUEST items per replace" }
-        rest.put()
-            .uri("/playlists/{id}/items", playlistId)
-            .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(json.encodeToString(ReplaceItemsRequest.serializer(), ReplaceItemsRequest(uris)))
-            .retrieve()
-            .toBodilessEntity()
+        val batches = uris.chunked(MAX_ITEMS_PER_REQUEST).ifEmpty { listOf(emptyList()) }
+        batches.forEachIndexed { index, batch ->
+            val body = json.encodeToString(ReplaceItemsRequest.serializer(), ReplaceItemsRequest(batch))
+            val request = if (index == 0) rest.put() else rest.post()
+            request
+                .uri("/playlists/{id}/items", playlistId)
+                .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .toBodilessEntity()
+        }
     }
 
     companion object {
