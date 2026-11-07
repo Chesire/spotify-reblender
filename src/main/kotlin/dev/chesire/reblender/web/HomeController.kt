@@ -4,6 +4,7 @@ import dev.chesire.reblender.blend.SharedMode
 import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.playlists.Blend
+import dev.chesire.reblender.playlists.BlendOutcome
 import dev.chesire.reblender.playlists.PlaylistService
 import dev.chesire.reblender.spotify.ReloginRequiredException
 import dev.chesire.reblender.users.AccountService
@@ -77,8 +78,8 @@ class HomeController(
         redirect: RedirectAttributes,
     ): String {
         handle(principal.name, redirect) {
-            val blend = playlists.create(principal.name, partnerIds.orEmpty(), timeRange, size, sharedMode)
-            "Created \"${blend.playlistName}\" with ${blend.trackCount} songs."
+            val outcome = playlists.create(principal.name, partnerIds.orEmpty(), timeRange, size, sharedMode)
+            "Created \"${outcome.blend.playlistName}\" with ${outcome.blend.trackCount} songs." + shortNote(outcome)
         }
         return "redirect:/"
     }
@@ -90,8 +91,8 @@ class HomeController(
         redirect: RedirectAttributes,
     ): String {
         handle(principal.name, redirect) {
-            val blend = playlists.update(principal.name, playlistId)
-            "Updated \"${blend.playlistName}\" with ${blend.trackCount} songs."
+            val outcome = playlists.update(principal.name, playlistId)
+            "Updated \"${outcome.blend.playlistName}\" with ${outcome.blend.trackCount} songs." + shortNote(outcome)
         }
         return "redirect:/"
     }
@@ -108,6 +109,21 @@ class HomeController(
         SecurityContextLogoutHandler().logout(request, response, authentication)
         redirect.addFlashAttribute("message", "Your stored Spotify login and blends have been deleted from this app.")
         return "redirect:/"
+    }
+
+    /** Explains a playlist that came out shorter than requested, e.g. "Spotify only had 48 usable top tracks for Chesire." */
+    private fun shortNote(outcome: BlendOutcome): String {
+        val blend = outcome.blend
+        if (blend.trackCount >= blend.size) return ""
+        val counts = outcome.usableTracks.entries.joinToString(", ") { (id, count) ->
+            "${users.findById(id)?.displayName ?: id}: $count"
+        }
+        val why = if (blend.memberIds.size == 1) {
+            "Spotify only had that many usable top tracks for you"
+        } else {
+            "not enough usable top tracks to fill an even split"
+        }
+        return " That's fewer than the ${blend.size} you asked for: $why (usable top tracks: $counts)."
     }
 
     private fun handle(me: String, redirect: RedirectAttributes, action: () -> String) {

@@ -10,6 +10,9 @@ import dev.chesire.reblender.users.UserRepository
 import org.springframework.stereotype.Service
 import java.time.Instant
 
+/** A created/updated blend plus how many usable top tracks each member had (to explain short playlists). */
+data class BlendOutcome(val blend: Blend, val usableTracks: Map<String, Int>)
+
 @Service
 class PlaylistService(
     private val spotify: SpotifyClient,
@@ -27,7 +30,7 @@ class PlaylistService(
         timeRange: TimeRange,
         size: Int,
         sharedMode: SharedMode,
-    ): Blend {
+    ): BlendOutcome {
         val partners = partnerIds.filter { it.isNotBlank() }.distinct()
         require(ownerId !in partners) { "You're always in your own blend; pick other people." }
         require(partners.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
@@ -44,7 +47,7 @@ class PlaylistService(
                 ?: throw IllegalArgumentException(if (id == ownerId) "Unknown user. Log out and in again." else "Someone you picked hasn't logged in yet.")
         }
 
-        val blended = buildBlend(memberIds, timeRange, size, sharedMode)
+        val (blended, usable) = buildBlend(memberIds, timeRange, size, sharedMode)
 
         // ASCII only and well under Spotify's description limit.
         val name = "${joinNames(names)} - ${timeRange.label}"
@@ -57,7 +60,7 @@ class PlaylistService(
         spotify.replaceItems(ownerId, playlist.id, blended.map { it.track.uri })
 
         val now = Instant.now()
-        return Blend(
+        val blend = Blend(
             playlistId = playlist.id,
             playlistName = name,
             playlistUrl = playlist.url,
@@ -69,18 +72,20 @@ class PlaylistService(
             trackCount = blended.size,
             createdAt = now,
             updatedAt = now,
-        ).also(blends::insert)
+        )
+        blends.insert(blend)
+        return BlendOutcome(blend, usable)
     }
 
     /** Re-runs the blend with fresh top tracks and replaces the playlist contents. */
-    fun update(ownerId: String, playlistId: String): Blend {
+    fun update(ownerId: String, playlistId: String): BlendOutcome {
         val blend = blends.findByIdAndOwner(playlistId, ownerId)
             ?: throw IllegalArgumentException("That playlist isn't one of yours.")
-        val blended = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode)
+        val (blended, usable) = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode)
         spotify.replaceItems(ownerId, playlistId, blended.map { it.track.uri })
         val now = Instant.now()
         blends.markRefreshed(playlistId, blended.size, now)
-        return blend.copy(trackCount = blended.size, updatedAt = now)
+        return BlendOutcome(blend.copy(trackCount = blended.size, updatedAt = now), usable)
     }
 
     fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwner(ownerId)
@@ -90,14 +95,14 @@ class PlaylistService(
         timeRange: TimeRange,
         size: Int,
         sharedMode: SharedMode,
-    ): List<BlendedTrack> {
+    ): Pair<List<BlendedTrack>, Map<String, Int>> {
         // Others first: if someone's login has expired we fail before touching the owner's playlist.
         val tracksById = (memberIds.drop(1) + memberIds.first())
             .associateWith { spotify.topTracks(it, timeRange) }
         val participants = memberIds.map { Participant(it, tracksById.getValue(it)) }
         val blended = BlendEngine.blend(participants, size, sharedMode)
         require(blended.isNotEmpty()) { "Nobody in this blend has any top tracks for that time range yet." }
-        return blended
+        return blended to memberIds.associateWith { tracksById.getValue(it).size }
     }
 
     companion object {

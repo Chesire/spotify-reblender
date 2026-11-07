@@ -4,6 +4,7 @@ import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.blend.Track
 import dev.chesire.reblender.config.ReblenderProperties
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -20,6 +21,7 @@ class SpotifyClient(
     properties: ReblenderProperties,
     private val tokens: SpotifyTokens,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
     private val rest = RestClient.builder().baseUrl(properties.spotifyApiBaseUrl).build()
     private val json = Json {
         ignoreUnknownKeys = true
@@ -35,9 +37,17 @@ class SpotifyClient(
             .body(String::class.java)
             ?: return emptyList()
 
-        return json.decodeFromString(TopTracksResponse.serializer(), body).items
+        val items = json.decodeFromString(TopTracksResponse.serializer(), body).items
+        val local = items.count { it.isLocal }
+        val missingId = items.count { !it.isLocal && (it.id == null || it.uri == null) }
+        val tracks = items
             .filter { !it.isLocal && it.id != null && it.uri != null }
             .map { Track(id = it.id!!, uri = it.uri!!, name = it.name, artists = it.artists.map(ArtistDto::name)) }
+        log.info(
+            "Top tracks for {} ({}): Spotify returned {} of {} requested; skipped {} local file(s) and {} without an ID; {} usable",
+            spotifyId, range.spotifyValue, items.size, TOP_TRACKS_LIMIT, local, missingId, tracks.size,
+        )
+        return tracks
     }
 
     /** Creates a private playlist owned by [ownerId]. */
