@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Also validates the Gradle wrapper checksum.
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Build and run tests
+        run: ./gradlew build --no-daemon
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: build/reports/tests/
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: spotify-reblender:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image runs as non-root
+        run: |
+          user=$(docker image inspect spotify-reblender:ci --format '{{.Config.User}}')
+          echo "Image user: $user"
+          test -n "$user" && test "$user" != "root"
+
+      - name: Refuses to start without an encryption key
+        run: |
+          set +e
+          timeout 120 docker run --rm \
+            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
+            spotify-reblender:ci > no-key.log 2>&1
+          status=$?
+          set -e
+          tail -n 20 no-key.log
+          if [ "$status" -eq 0 ] || [ "$status" -eq 124 ]; then
+            echo "Expected the app to exit with an error when TOKEN_ENCRYPTION_KEY is missing (status $status)"
+            exit 1
+          fi
+          grep -q "TOKEN_ENCRYPTION_KEY" no-key.log
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name reblender \
+            --read-only --tmpfs /tmp \
+            --security-opt no-new-privileges:true \
+            -v reblender-ci:/data \
+            -p 127.0.0.1:8080:8080 \
+            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
+            -e TOKEN_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
+            spotify-reblender:ci
+
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/ -o home.html; then break; fi
+            sleep 2
+          done
+
+          docker logs reblender | tail -n 40
+          grep -q "Log in with Spotify" home.html
+
+          # Login must redirect to Spotify's authorize endpoint with only the expected scopes.
+          location=$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/oauth2/authorization/spotify)
+          echo "Redirect: $location"
+          echo "$location" | grep -q "^https://accounts.spotify.com/authorize"
+          echo "$location" | grep -q "scope=user-top-read%20playlist-modify-private"
+
+          # Protected routes must not be reachable anonymously.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/playlists)
+          echo "Anonymous POST /playlists -> $code"
+          test "$code" != "200"
+
+      - name: Container logs
+        if: always()
+        run: docker logs reblender 2>&1 | tail -n 200 || true
