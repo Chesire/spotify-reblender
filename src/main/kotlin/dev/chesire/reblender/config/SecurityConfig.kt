@@ -1,6 +1,7 @@
 package dev.chesire.reblender.config
 
 import dev.chesire.reblender.security.EncryptedJdbcAuthorizedClientService
+import dev.chesire.reblender.security.EncryptionKeySource
 import dev.chesire.reblender.security.TokenCipher
 import dev.chesire.reblender.users.LoginSuccessHandler
 import dev.chesire.reblender.users.UserRepository
@@ -39,9 +40,10 @@ class SecurityConfig {
         return http.build()
     }
 
-    /** Fails fast at startup if TOKEN_ENCRYPTION_KEY is missing or malformed. */
+    /** Fails fast at startup if the key is missing, unreadable or malformed. */
     @Bean
-    fun tokenCipher(properties: ReblenderProperties): TokenCipher = TokenCipher(properties.tokenEncryptionKey)
+    fun tokenCipher(properties: ReblenderProperties): TokenCipher =
+        TokenCipher(EncryptionKeySource.resolve(properties.tokenEncryptionKey, properties.tokenEncryptionKeyFile))
 
     /**
      * Persist tokens in the database (encrypted) so the app can act for a partner who isn't logged in.

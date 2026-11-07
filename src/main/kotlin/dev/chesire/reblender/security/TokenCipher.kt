@@ -24,7 +24,7 @@ class TokenCipher(base64Key: String) {
 
     init {
         require(base64Key.isNotBlank()) {
-            "TOKEN_ENCRYPTION_KEY is not set. Generate one with: openssl rand -base64 32"
+            "TOKEN_ENCRYPTION_KEY (or TOKEN_ENCRYPTION_KEY_FILE) is not set. Generate a key with: openssl rand -base64 32"
         }
         val bytes = try {
             Base64.getDecoder().decode(base64Key.trim())

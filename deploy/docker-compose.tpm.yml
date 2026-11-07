@@ -1,0 +1,7 @@
+# Used by deploy/systemd/spotify-reblender-docker.service.
+# The unit decrypts the TPM-sealed key and passes it in TOKEN_ENCRYPTION_KEY; it is never written to disk.
+# Leave TOKEN_ENCRYPTION_KEY empty in .env when using this.
+services:
+  reblender:
+    environment:
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}

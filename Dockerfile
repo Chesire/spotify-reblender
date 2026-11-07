@@ -8,8 +8,9 @@ RUN ./gradlew --no-daemon bootJar -x test
 
 FROM eclipse-temurin:21-jre
 # Run as an unprivileged user; only it can read the database (and the encrypted tokens) in /data.
-RUN groupadd --system reblender \
-    && useradd --system --gid reblender --home-dir /app --shell /usr/sbin/nologin reblender \
+# Fixed UID/GID 10001 so a key file mounted from the host can be chowned to it.
+RUN groupadd --system --gid 10001 reblender \
+    && useradd --system --uid 10001 --gid reblender --home-dir /app --shell /usr/sbin/nologin reblender \
     && mkdir -p /data \
     && chown reblender:reblender /data \
     && chmod 700 /data

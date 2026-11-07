@@ -47,3 +47,5 @@ reblender:
   spotify-api-base-url: https://api.spotify.com/v1
   # Required. Base64 AES-256 key used to encrypt stored Spotify tokens: openssl rand -base64 32
   token-encryption-key: ${TOKEN_ENCRYPTION_KEY:}
+  # Or a file containing it (Docker secret / TPM-sealed systemd credential). Set only one of the two.
+  token-encryption-key-file: ${TOKEN_ENCRYPTION_KEY_FILE:}

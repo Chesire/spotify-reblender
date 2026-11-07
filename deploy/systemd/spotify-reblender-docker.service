@@ -1,0 +1,22 @@
+# Runs the Docker Compose stack with the encryption key sealed to this machine's TPM.
+# Setup: see "Sealing the key to this machine (TPM)" in README.md.
+# Install: sudo cp deploy/systemd/spotify-reblender-docker.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now spotify-reblender-docker
+[Unit]
+Description=spotify-reblender (Docker, TPM-sealed token key)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=/opt/spotify-reblender
+# systemd decrypts this with the TPM into a private in-memory directory only this service can read.
+LoadCredentialEncrypted=reblender-token-key:/etc/credstore.encrypted/reblender-token-key
+ExecStart=/bin/sh -c 'TOKEN_ENCRYPTION_KEY="$$(cat "$${CREDENTIALS_DIRECTORY}/reblender-token-key")" exec /usr/bin/docker compose -f docker-compose.yml -f deploy/docker-compose.tpm.yml up --build --remove-orphans'
+ExecStop=/usr/bin/docker compose -f docker-compose.yml -f deploy/docker-compose.tpm.yml down
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

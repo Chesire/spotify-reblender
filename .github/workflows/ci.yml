@@ -78,6 +78,33 @@ jobs:
           fi
           grep -q "TOKEN_ENCRYPTION_KEY" no-key.log
 
+      - name: Starts with the key in a file (Docker secret path)
+        run: |
+          mkdir -p secrets
+          openssl rand -base64 32 > secrets/token_encryption_key
+          sudo chown 10001:10001 secrets/token_encryption_key
+          sudo chmod 400 secrets/token_encryption_key
+
+          # The compose override must resolve the secret relative to the project directory.
+          touch .env
+          docker compose -f docker-compose.yml -f deploy/docker-compose.secret.yml config > resolved.yml
+          grep -q "$PWD/secrets/token_encryption_key" resolved.yml
+
+          docker run -d --name reblender-keyfile \
+            --read-only --tmpfs /tmp \
+            -v "$PWD/secrets/token_encryption_key:/run/secrets/token_encryption_key:ro" \
+            -p 127.0.0.1:8081:8080 \
+            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
+            -e TOKEN_ENCRYPTION_KEY_FILE=/run/secrets/token_encryption_key \
+            spotify-reblender:ci
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8081/ -o /dev/null; then ok=1; break; fi
+            sleep 2
+          done
+          docker logs reblender-keyfile | tail -n 20
+          docker rm -f reblender-keyfile
+          test "${ok:-0}" = 1
+
       - name: Smoke test the container
         run: |
           docker run -d --name reblender \
