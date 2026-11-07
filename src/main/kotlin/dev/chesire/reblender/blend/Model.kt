@@ -17,15 +17,19 @@ enum class TimeRange(val spotifyValue: String, val label: String) {
     ALL_TIME("long_term", "All-time favourites"),
 }
 
-/** What to do when both users share more tracks than the playlist needs. */
+/** What to do when the group shares more tracks than the shared budget allows. */
 enum class SharedMode(val label: String) {
-    /** At most a third of the playlist is shared tracks; the rest are each user's own picks. */
-    CAP_THIRD("Cap shared songs at a third"),
+    /** Shared songs are capped by group size: 1/3 for 2 people up to 4/5 for 5 (see [BlendEngine.sharedShare]). */
+    CAPPED("Cap shared songs by group size"),
 
-    /** Shared tracks may fill the playlist. */
+    /** Shared songs may fill the playlist. */
     FILL("Let shared songs fill it"),
 }
 
-enum class Source { A, B, SHARED }
+/** One person in a blend, with their ranked top tracks (best first). */
+data class Participant(val id: String, val tracks: List<Track>)
 
-data class BlendedTrack(val track: Track, val source: Source)
+/** A chosen track and everyone whose top list it came from. More than one contributor = shared. */
+data class BlendedTrack(val track: Track, val contributors: Set<String>) {
+    val isShared: Boolean get() = contributors.size > 1
+}

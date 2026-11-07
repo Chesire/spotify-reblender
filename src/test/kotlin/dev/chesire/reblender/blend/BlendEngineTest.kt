@@ -12,150 +12,261 @@ class BlendEngineTest {
 
     private fun track(id: String) = Track(id = id, uri = "spotify:track:$id", name = id, artists = listOf("x"))
 
-    private fun List<BlendedTrack>.count(source: Source) = count { it.source == source }
+    private fun p(id: String, tracks: List<Track>) = Participant(id, tracks)
+
+    private fun blend2(a: List<Track>, b: List<Track>, size: Int, mode: SharedMode = SharedMode.CAPPED) =
+        BlendEngine.blend(listOf(p("a", a), p("b", b)), size, mode)
+
+    private fun List<BlendedTrack>.shared() = count { it.isShared }
+    private fun List<BlendedTrack>.soloOf(id: String) = count { it.contributors == setOf(id) }
+
+    /** S for shared, otherwise the contributor's id upper-cased. */
+    private fun List<BlendedTrack>.pattern() =
+        joinToString("") { if (it.isShared) "S" else it.contributors.single().uppercase() }
+
+    // ---- Two people (original rules) ----
 
     @Test
-    fun `even size with no overlap splits evenly`() {
-        val result = BlendEngine.blend(tracks("a", 50), tracks("b", 50), 20, SharedMode.CAP_THIRD)
+    fun `two people with no overlap split evenly`() {
+        val result = blend2(tracks("a", 50), tracks("b", 50), 20)
         assertEquals(20, result.size)
-        assertEquals(10, result.count(Source.A))
-        assertEquals(10, result.count(Source.B))
-        assertEquals(0, result.count(Source.SHARED))
+        assertEquals(10, result.soloOf("a"))
+        assertEquals(10, result.soloOf("b"))
+        assertEquals(0, result.shared())
     }
 
     @Test
-    fun `picks each user's top tracks in rank order`() {
-        val result = BlendEngine.blend(tracks("a", 50), tracks("b", 50), 6, SharedMode.CAP_THIRD)
-        assertEquals(listOf("a1", "a2", "a3"), result.filter { it.source == Source.A }.map { it.track.id })
-        assertEquals(listOf("b1", "b2", "b3"), result.filter { it.source == Source.B }.map { it.track.id })
+    fun `picks each person's top tracks in rank order`() {
+        val result = blend2(tracks("a", 50), tracks("b", 50), 6)
+        assertEquals(listOf("a1", "a2", "a3"), result.filter { it.contributors == setOf("a") }.map { it.track.id })
+        assertEquals(listOf("b1", "b2", "b3"), result.filter { it.contributors == setOf("b") }.map { it.track.id })
     }
 
     @Test
     fun `odd size with no overlap drops one track`() {
-        val result = BlendEngine.blend(tracks("a", 50), tracks("b", 50), 11, SharedMode.CAP_THIRD)
+        val result = blend2(tracks("a", 50), tracks("b", 50), 11)
         assertEquals(10, result.size)
-        assertEquals(5, result.count(Source.A))
-        assertEquals(5, result.count(Source.B))
+        assertEquals(5, result.soloOf("a"))
+        assertEquals(5, result.soloOf("b"))
     }
 
     @Test
     fun `odd remainder goes to a spare shared track`() {
-        // size 10, cap 3, 5 shared -> 3 shared leaves 7 (odd) -> 4 shared, 3 + 3.
         val shared = tracks("s", 5)
-        val result = BlendEngine.blend(shared + tracks("a", 40), shared + tracks("b", 40), 10, SharedMode.CAP_THIRD)
+        val result = blend2(shared + tracks("a", 40), shared + tracks("b", 40), 10)
         assertEquals(10, result.size)
-        assertEquals(4, result.count(Source.SHARED))
-        assertEquals(3, result.count(Source.A))
-        assertEquals(3, result.count(Source.B))
+        assertEquals(4, result.shared())
+        assertEquals(3, result.soloOf("a"))
+        assertEquals(3, result.soloOf("b"))
     }
 
     @Test
-    fun `cap third limits shared tracks when overlap is large`() {
+    fun `two people cap shared at a third`() {
         val shared = tracks("s", 30)
-        val result = BlendEngine.blend(shared + tracks("a", 20), shared + tracks("b", 20), 30, SharedMode.CAP_THIRD)
+        val result = blend2(shared + tracks("a", 20), shared + tracks("b", 20), 30)
         assertEquals(30, result.size)
-        assertEquals(10, result.count(Source.SHARED))
-        assertEquals(10, result.count(Source.A))
-        assertEquals(10, result.count(Source.B))
+        assertEquals(10, result.shared())
+        assertEquals(10, result.soloOf("a"))
+        assertEquals(10, result.soloOf("b"))
     }
 
     @Test
     fun `fill mode lets shared tracks fill the playlist`() {
         val shared = tracks("s", 30)
-        val result = BlendEngine.blend(shared + tracks("a", 20), shared + tracks("b", 20), 20, SharedMode.FILL)
+        val result = blend2(shared + tracks("a", 20), shared + tracks("b", 20), 20, SharedMode.FILL)
         assertEquals(20, result.size)
-        assertEquals(20, result.count(Source.SHARED))
+        assertEquals(20, result.shared())
     }
 
     @Test
     fun `fill mode with fewer shared than size splits the rest evenly`() {
         val shared = tracks("s", 4)
-        val result = BlendEngine.blend(shared + tracks("a", 40), shared + tracks("b", 40), 20, SharedMode.FILL)
+        val result = blend2(shared + tracks("a", 40), shared + tracks("b", 40), 20, SharedMode.FILL)
         assertEquals(20, result.size)
-        assertEquals(4, result.count(Source.SHARED))
-        assertEquals(8, result.count(Source.A))
-        assertEquals(8, result.count(Source.B))
+        assertEquals(4, result.shared())
+        assertEquals(8, result.soloOf("a"))
+        assertEquals(8, result.soloOf("b"))
     }
 
     @Test
-    fun `shared tracks are ordered by combined rank`() {
-        // x is 1st for A and 3rd for B (sum 2); y is 2nd for A and 1st for B (sum 1).
+    fun `shared tracks are ordered by average rank`() {
+        // x is 1st for A and 3rd for B (avg 1); y is 2nd for A and 1st for B (avg 0.5).
         val a = listOf(track("x"), track("y"), track("a1"))
         val b = listOf(track("y"), track("b1"), track("x"))
-        val result = BlendEngine.blend(a, b, 2, SharedMode.FILL)
+        val result = blend2(a, b, 2, SharedMode.FILL)
         assertEquals(listOf("y", "x"), result.map { it.track.id })
     }
 
     @Test
-    fun `when one user is short the other fills the gap`() {
-        val result = BlendEngine.blend(tracks("a", 3), tracks("b", 50), 20, SharedMode.CAP_THIRD)
+    fun `when one person is short the other fills the gap`() {
+        val result = blend2(tracks("a", 3), tracks("b", 50), 20)
         assertEquals(20, result.size)
-        assertEquals(3, result.count(Source.A))
-        assertEquals(17, result.count(Source.B))
+        assertEquals(3, result.soloOf("a"))
+        assertEquals(17, result.soloOf("b"))
     }
 
     @Test
-    fun `when both are short leftover shared tracks fill the gap beyond the cap`() {
-        val shared = tracks("s", 10)
-        // size 30, cap 10 -> 10 shared; 20 left -> 10 each, but each user only has 3 of their own.
-        val result = BlendEngine.blend(shared + tracks("a", 3), shared + tracks("b", 3), 30, SharedMode.CAP_THIRD)
-        assertEquals(16, result.size)
-        assertEquals(10, result.count(Source.SHARED))
-    }
-
-    @Test
-    fun `when both are short and shared is spare it is used`() {
+    fun `when both are short leftover shared tracks fill the gap`() {
         val shared = tracks("s", 20)
-        // size 30, cap 10 -> 10 shared; 20 left -> 10 each, users have 4 own each -> gap 12 -> shared up to 20.
-        val result = BlendEngine.blend(shared + tracks("a", 4), shared + tracks("b", 4), 30, SharedMode.CAP_THIRD)
+        val result = blend2(shared + tracks("a", 4), shared + tracks("b", 4), 30)
         assertEquals(28, result.size)
-        assertEquals(20, result.count(Source.SHARED))
-        assertEquals(4, result.count(Source.A))
-        assertEquals(4, result.count(Source.B))
+        assertEquals(20, result.shared())
     }
 
     @Test
-    fun `full overlap in cap mode still returns shared tracks`() {
+    fun `full overlap in capped mode still returns shared tracks`() {
         val shared = tracks("s", 50)
-        val result = BlendEngine.blend(shared, shared, 30, SharedMode.CAP_THIRD)
+        val result = blend2(shared, shared, 30)
         assertEquals(30, result.size)
-        assertTrue(result.all { it.source == Source.SHARED })
-    }
-
-    @Test
-    fun `empty inputs give an empty playlist`() {
-        assertEquals(0, BlendEngine.blend(emptyList(), emptyList(), 10, SharedMode.CAP_THIRD).size)
-    }
-
-    @Test
-    fun `no duplicates even when inputs repeat`() {
-        val a = tracks("a", 10) + tracks("a", 10)
-        val result = BlendEngine.blend(a, tracks("b", 10), 20, SharedMode.CAP_THIRD)
-        assertEquals(result.size, result.map { it.track.id }.toSet().size)
+        assertTrue(result.all { it.isShared })
     }
 
     @Test
     fun `sources are interleaved rather than grouped`() {
         val shared = tracks("s", 5)
-        val result = BlendEngine.blend(shared + tracks("a", 40), shared + tracks("b", 40), 10, SharedMode.CAP_THIRD)
-        val pattern = result.joinToString("") { it.source.name.first().toString() }
-        assertEquals("SABSABSABS", pattern)
+        val result = blend2(shared + tracks("a", 40), shared + tracks("b", 40), 10)
+        assertEquals("SABSABSABS", result.pattern())
     }
 
     @Test
-    fun `no source has a long run in a large playlist`() {
-        val result = BlendEngine.blend(tracks("a", 50), tracks("b", 50), 100, SharedMode.CAP_THIRD)
-        val longestRun = result.fold(Pair(0, 0) to null as Source?) { (acc, prev), item ->
-            val run = if (item.source == prev) acc.first + 1 else 1
-            Pair(run, maxOf(acc.second, run)) to item.source
-        }.first.second
-        assertTrue(longestRun <= 1, "longest run was $longestRun")
+    fun `no person has a long run in a large playlist`() {
+        val result = blend2(tracks("a", 50), tracks("b", 50), 100)
+        assertTrue(result.zipWithNext().none { (x, y) -> x.contributors == y.contributors })
+    }
+
+    // ---- One person (local testing) ----
+
+    @Test
+    fun `single person gets their own top tracks in order`() {
+        val result = BlendEngine.blend(listOf(p("a", tracks("a", 50))), 10, SharedMode.CAPPED)
+        assertEquals((1..10).map { "a$it" }, result.map { it.track.id })
+        assertTrue(result.all { it.contributors == setOf("a") })
+    }
+
+    @Test
+    fun `single person with fewer tracks than size gets them all`() {
+        val result = BlendEngine.blend(listOf(p("a", tracks("a", 5))), 10, SharedMode.FILL)
+        assertEquals(5, result.size)
+    }
+
+    // ---- Three to five people ----
+
+    @Test
+    fun `shared budget grows with group size`() {
+        assertEquals(1.0 / 3, BlendEngine.sharedShare(2))
+        assertEquals(0.5, BlendEngine.sharedShare(3))
+        assertEquals(2.0 / 3, BlendEngine.sharedShare(4))
+        assertEquals(0.8, BlendEngine.sharedShare(5))
+    }
+
+    @Test
+    fun `three people prefer songs shared by everyone, then by fewer`() {
+        val all3 = tracks("t", 6)
+        val ab = tracks("ab", 20)
+        val people = listOf(
+            p("a", all3 + ab + tracks("a", 30)),
+            p("b", all3 + ab + tracks("b", 30)),
+            p("c", all3 + tracks("c", 30)),
+        )
+        val result = BlendEngine.blend(people, 30, SharedMode.CAPPED)
+        assertEquals(30, result.size)
+        assertEquals(15, result.shared()) // 50% of 30
+        val sharedInOrder = result.filter { it.isShared }
+        assertTrue(sharedInOrder.take(6).all { it.contributors.size == 3 })
+        assertTrue(sharedInOrder.drop(6).all { it.contributors == setOf("a", "b") })
+        assertEquals(5, result.soloOf("a"))
+        assertEquals(5, result.soloOf("b"))
+        assertEquals(5, result.soloOf("c"))
+    }
+
+    @Test
+    fun `four people cap shared at two thirds`() {
+        val shared = tracks("s", 40)
+        val people = (1..4).map { p("u$it", shared + tracks("u${it}_", 30)) }
+        val result = BlendEngine.blend(people, 12, SharedMode.CAPPED)
+        assertEquals(12, result.size)
+        assertEquals(8, result.shared())
+        people.forEach { assertEquals(1, result.soloOf(it.id)) }
+    }
+
+    @Test
+    fun `five people with few shared songs fall back to solo picks`() {
+        val shared = tracks("s", 3)
+        val people = (1..5).map { p("u$it", shared + tracks("u${it}_", 30)) }
+        val result = BlendEngine.blend(people, 25, SharedMode.CAPPED)
+        // budget 20 but only 3 shared; 22 left, 2 don't divide by 5 and no shared remain -> 4 each.
+        assertEquals(23, result.size)
+        assertEquals(3, result.shared())
+        people.forEach { assertEquals(4, result.soloOf(it.id)) }
+    }
+
+    @Test
+    fun `five people use lower tiers when not enough songs are shared by all`() {
+        val all5 = tracks("all", 4)
+        val trio = tracks("trio", 20)
+        val people = (1..5).map { i ->
+            p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
+        }
+        val result = BlendEngine.blend(people, 20, SharedMode.CAPPED)
+        val shared = result.filter { it.isShared }
+        // Budget is 16 (80%); the 4 slots left can't split 5 ways, so they go to spare shared songs too.
+        assertEquals(20, result.size)
+        assertEquals(20, shared.size)
+        assertTrue(shared.take(4).all { it.contributors.size == 5 })
+        assertTrue(shared.drop(4).all { it.contributors.size == 3 })
+    }
+
+    @Test
+    fun `five people with a larger playlist mix shared and solo`() {
+        val all5 = tracks("all", 4)
+        val trio = tracks("trio", 20)
+        val people = (1..5).map { i ->
+            p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
+        }
+        val result = BlendEngine.blend(people, 30, SharedMode.CAPPED)
+        // Budget 24 shared and exactly 24 exist; 6 left -> 1 each, and the uneven slot is dropped (no spare shared).
+        assertEquals(29, result.size)
+        assertEquals(24, result.shared())
+        people.forEach { assertEquals(1, result.soloOf(it.id)) }
+    }
+
+    @Test
+    fun `shared tracks list every contributor`() {
+        val shared = tracks("s", 2)
+        val people = listOf(p("a", shared + tracks("a", 5)), p("b", shared), p("c", shared.take(1)))
+        val result = BlendEngine.blend(people, 3, SharedMode.FILL)
+        assertEquals(setOf("a", "b", "c"), result.first { it.track.id == "s1" }.contributors)
+        assertEquals(setOf("a", "b"), result.first { it.track.id == "s2" }.contributors)
+    }
+
+    // ---- Validation ----
+
+    @Test
+    fun `no duplicates even when inputs repeat`() {
+        val result = blend2(tracks("a", 10) + tracks("a", 10), tracks("b", 10), 20)
+        assertEquals(result.size, result.map { it.track.id }.toSet().size)
+    }
+
+    @Test
+    fun `empty inputs give an empty playlist`() {
+        assertEquals(0, blend2(emptyList(), emptyList(), 10).size)
     }
 
     @Test
     fun `size below two is rejected`() {
+        assertFailsWith<IllegalArgumentException> { blend2(tracks("a", 5), tracks("b", 5), 1) }
+    }
+
+    @Test
+    fun `more than five people is rejected`() {
+        val people = (1..6).map { p("u$it", tracks("u$it", 5)) }
+        assertFailsWith<IllegalArgumentException> { BlendEngine.blend(people, 10, SharedMode.CAPPED) }
+    }
+
+    @Test
+    fun `the same person twice is rejected`() {
         assertFailsWith<IllegalArgumentException> {
-            BlendEngine.blend(tracks("a", 5), tracks("b", 5), 1, SharedMode.CAP_THIRD)
+            BlendEngine.blend(listOf(p("a", tracks("a", 5)), p("a", tracks("a", 5))), 10, SharedMode.CAPPED)
         }
     }
 }
