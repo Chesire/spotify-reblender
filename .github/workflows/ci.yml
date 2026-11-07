@@ -194,7 +194,7 @@ jobs:
           docker logs reblender-https 2>&1 | tail -n 20
           docker rm -f reblender-https
           grep -i "^set-cookie: JSESSIONID" cookie-https.txt | grep -qi "secure"
-          grep -i "^location:" cookie-https.txt | grep -q "redirect_uri=https%3A%2F%2Freblender.example.com"
+          grep -i "^location:" cookie-https.txt | grep -q "redirect_uri=https://reblender.example.com/login/oauth2/code/spotify"
 
       - name: Container logs
         if: always()
