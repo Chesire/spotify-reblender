@@ -17,7 +17,7 @@
     <section class="card breakdown-head">
         <h1 th:text="${b.blend.playlistName}">Playlist</h1>
         <p class="muted small">
-            <span th:text="${b.blend.timeRange.label}">range</span> (<span th:text="${b.blend.timeRange.window}">window</span>)
+            <span th:text="${#strings.capitalize(b.blend.timeRange.window)}">Last ~4 weeks</span>
             &middot; <span th:text="${b.blend.trackCount}">0</span>/<span th:text="${b.blend.size}">0</span> songs
             &middot; <span th:text="${b.blend.sharedMode.label}">mode</span>
             &middot; updated <span th:text="${updatedLabel}">date</span>

@@ -143,7 +143,7 @@ dialog.confirm h3 { margin-top: 0; font-size: 1.1rem; }
 .tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border: 1px solid #3a3a3a; border-radius: 999px; padding: 0.1rem 0.5rem; }
 .stack { display: flex; }
 .stack .avatar { box-shadow: 0 0 0 2px var(--c), 0 0 0 4px var(--card); transition: transform 0.2s ease; }
-.stack .avatar + .avatar { margin-left: -0.45rem; }
+.stack .avatar + .avatar { margin-left: -0.15rem; }
 .stack .avatar:hover { transform: translateY(-3px) scale(1.12); z-index: 2; }
 
 /* Name tooltip on small avatars */
