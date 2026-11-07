@@ -50,3 +50,33 @@ fieldset.people, fieldset.choices { grid-column: 1 / -1; border: 1px solid #3a3a
 fieldset.people legend, fieldset.choices legend { color: var(--muted); font-size: 0.9rem; padding: 0 0.25rem; }
 fieldset.people p { flex-basis: 100%; margin: 0; }
 label.check { flex-direction: row; align-items: center; gap: 0.4rem; color: var(--text); font-size: 1rem; }
+
+.row-actions { display: flex; align-items: center; gap: 0.5rem; position: relative; }
+details.menu { position: relative; }
+details.menu > summary { list-style: none; }
+details.menu > summary::-webkit-details-marker { display: none; }
+.menu-button {
+    cursor: pointer; width: 2rem; height: 2rem; display: grid; place-items: center;
+    border-radius: 999px; color: var(--muted); font-size: 1.25rem; line-height: 1; user-select: none;
+}
+.menu-button:hover, details.menu[open] > .menu-button { background: #2a2a2a; color: var(--text); }
+.menu-items {
+    position: absolute; right: 0; top: calc(100% + 0.25rem); z-index: 10; min-width: 11rem;
+    background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 8px; padding: 0.25rem;
+    display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.menu-items a, .menu-items button {
+    background: none; border: 0; color: var(--text); font: inherit; text-align: left;
+    padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; text-decoration: none;
+}
+.menu-items a:hover, .menu-items button:hover { background: #3a3a3a; }
+.menu-items .danger { color: var(--err); }
+
+dialog.confirm {
+    background: var(--card); color: var(--text); border: 1px solid #3a3a3a; border-radius: 12px;
+    padding: 1.25rem; max-width: 26rem; width: calc(100% - 2rem);
+}
+dialog.confirm::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog.confirm h3 { margin-top: 0; font-size: 1.1rem; }
+.dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1rem; }
+.button.danger { background: var(--err); color: #fff; }

@@ -7,8 +7,16 @@ import dev.chesire.reblender.blend.SharedMode
 import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.spotify.SpotifyClient
 import dev.chesire.reblender.users.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestClientResponseException
 import java.time.Instant
+
+/**
+ * Result of deleting a blend. [spotifyStatus] is null when Spotify wasn't asked (or succeeded), otherwise
+ * the HTTP status Spotify refused with; [removedFromSpotify] says whether it's gone from the library.
+ */
+data class DeleteOutcome(val playlistName: String, val removedFromSpotify: Boolean, val spotifyStatus: Int?)
 
 /** A created/updated blend plus how many usable top tracks each member had (to explain short playlists). */
 data class BlendOutcome(val blend: Blend, val usableTracks: Map<String, Int>)
@@ -19,6 +27,7 @@ class PlaylistService(
     private val users: UserRepository,
     private val blends: BlendRepository,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * Creates a playlist owned by [ownerId] from the owner plus up to four [partnerIds].
@@ -86,6 +95,33 @@ class PlaylistService(
         val now = Instant.now()
         blends.markRefreshed(playlistId, blended.size, now)
         return BlendOutcome(blend.copy(trackCount = blended.size, updatedAt = now), usable)
+    }
+
+    /**
+     * Stops managing a blend and, if [removeFromSpotify], also removes the playlist from the owner's Spotify library.
+     * The app's record is deleted even if Spotify refuses, so the user is never stuck with a blend they can't remove.
+     */
+    fun delete(ownerId: String, playlistId: String, removeFromSpotify: Boolean): DeleteOutcome {
+        val blend = blends.findByIdAndOwner(playlistId, ownerId)
+            ?: throw IllegalArgumentException("That playlist isn't one of yours.")
+
+        var removed = false
+        var status: Int? = null
+        if (removeFromSpotify) {
+            try {
+                spotify.removePlaylistFromLibrary(ownerId, playlistId)
+                removed = true
+            } catch (e: RestClientResponseException) {
+                if (e.statusCode.value() == 404) {
+                    removed = true // already gone on Spotify's side
+                } else {
+                    status = e.statusCode.value()
+                    log.warn("Spotify refused to remove playlist {} ({}): {}", playlistId, status, e.responseBodyAsString)
+                }
+            }
+        }
+        blends.delete(playlistId, ownerId)
+        return DeleteOutcome(blend.playlistName, removed, status)
     }
 
     fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwner(ownerId)

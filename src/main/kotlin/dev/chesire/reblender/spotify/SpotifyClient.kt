@@ -89,6 +89,19 @@ class SpotifyClient(
         }
     }
 
+    /**
+     * Removes a playlist from the owner's library, which is how Spotify "deletes" a playlist you own.
+     * Uses the post-February-2026 generic library endpoint. Spotify keeps deleted playlists recoverable
+     * for a while at spotify.com/account/recover-playlists.
+     */
+    fun removePlaylistFromLibrary(ownerId: String, playlistId: String) {
+        rest.delete()
+            .uri("/me/library?uris={uri}", "spotify:playlist:$playlistId")
+            .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
+            .retrieve()
+            .toBodilessEntity()
+    }
+
     companion object {
         const val TOP_TRACKS_LIMIT = 50
         const val MAX_ITEMS_PER_REQUEST = 100

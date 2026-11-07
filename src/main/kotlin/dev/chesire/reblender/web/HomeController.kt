@@ -97,6 +97,26 @@ class HomeController(
         return "redirect:/"
     }
 
+    @PostMapping("/playlists/{playlistId}/delete")
+    fun delete(
+        @AuthenticationPrincipal principal: OAuth2User,
+        @PathVariable playlistId: String,
+        @RequestParam(defaultValue = "false") removeFromSpotify: Boolean,
+        redirect: RedirectAttributes,
+    ): String {
+        handle(principal.name, redirect) {
+            val outcome = playlists.delete(principal.name, playlistId, removeFromSpotify)
+            val name = "\"${outcome.playlistName}\""
+            when {
+                !removeFromSpotify -> "Stopped managing $name. It's still in your Spotify library."
+                outcome.removedFromSpotify -> "Deleted $name from the app and your Spotify library."
+                else -> "Removed $name from the app, but Spotify wouldn't let the app delete it " +
+                    "(error ${outcome.spotifyStatus}). Delete it in Spotify yourself."
+            }
+        }
+        return "redirect:/"
+    }
+
     /** Deletes this user's stored tokens and data, then logs them out. */
     @PostMapping("/account/forget")
     fun forget(

@@ -92,15 +92,62 @@
                             &middot; updated <span th:text="${row.updatedLabel}">date</span>
                         </div>
                     </div>
-                    <form th:action="@{/playlists/{id}/update(id=${row.blend.playlistId})}" method="post">
-                        <button type="submit" class="button small">Update</button>
-                    </form>
+                    <div class="row-actions">
+                        <form th:action="@{/playlists/{id}/update(id=${row.blend.playlistId})}" method="post">
+                            <button type="submit" class="button small">Update</button>
+                        </form>
+                        <details class="menu">
+                            <summary class="menu-button" aria-label="More actions" title="More actions">&#8943;</summary>
+                            <div class="menu-items" role="menu">
+                                <a role="menuitem" th:href="${row.blend.playlistUrl}" target="_blank" rel="noopener">Open in Spotify</a>
+                                <button type="button" role="menuitem" class="danger"
+                                        th:data-dialog="${'delete-' + row.blend.playlistId}">Delete&hellip;</button>
+                            </div>
+                        </details>
+                        <dialog th:id="${'delete-' + row.blend.playlistId}" class="confirm">
+                            <form th:action="@{/playlists/{id}/delete(id=${row.blend.playlistId})}" method="post">
+                                <h3>Delete &ldquo;<span th:text="${row.blend.playlistName}">Playlist</span>&rdquo;?</h3>
+                                <p class="muted small">The app will stop managing this playlist.</p>
+                                <label class="check">
+                                    <input type="checkbox" name="removeFromSpotify" value="true" checked>
+                                    <span>Also delete it from my Spotify library</span>
+                                </label>
+                                <p class="muted small">Spotify usually lets you restore deleted playlists for a while
+                                    at spotify.com/account/recover-playlists.</p>
+                                <div class="dialog-actions">
+                                    <button type="button" class="link" data-close>Cancel</button>
+                                    <button type="submit" class="button danger">Delete</button>
+                                </div>
+                            </form>
+                        </dialog>
+                    </div>
                 </li>
             </ul>
         </section>
     </th:block>
 </main>
 <script>
+    // Playlist "more actions" menus and the delete confirmation dialog.
+    document.addEventListener("click", function (event) {
+        var opener = event.target.closest("[data-dialog]");
+        if (opener) {
+            var menu = opener.closest("details");
+            if (menu) menu.open = false;
+            var dialog = document.getElementById(opener.dataset.dialog);
+            if (dialog) dialog.showModal();
+            return;
+        }
+        var closer = event.target.closest("[data-close]");
+        if (closer) {
+            closer.closest("dialog").close();
+            return;
+        }
+        // Clicking anywhere else closes any open menu.
+        document.querySelectorAll("details.menu[open]").forEach(function (menu) {
+            if (!menu.contains(event.target)) menu.open = false;
+        });
+    });
+
     // Keep the size limits in step with how many people are ticked: 1 song per person up to 50 each.
     (function () {
         var form = document.querySelector("form.blend-form");

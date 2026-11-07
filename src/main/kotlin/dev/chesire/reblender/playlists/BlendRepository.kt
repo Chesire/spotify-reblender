@@ -98,6 +98,13 @@ class BlendRepository(private val jdbc: JdbcClient) {
             .map(::withMembers)
             .orElse(null)
 
+    /** Deletes one blend (members cascade). Returns false if it wasn't the owner's. */
+    fun delete(playlistId: String, ownerId: String): Boolean =
+        jdbc.sql("DELETE FROM blend WHERE playlist_id = :id AND owner_id = :owner")
+            .param("id", playlistId)
+            .param("owner", ownerId)
+            .update() > 0
+
     /** Removes every blend the user is in (as owner or member). The Spotify playlists themselves are left alone. */
     fun deleteInvolving(spotifyId: String) {
         jdbc.sql(
