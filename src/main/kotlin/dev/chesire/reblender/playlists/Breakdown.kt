@@ -21,6 +21,7 @@ data class MemberView(
 /** One song row on the breakdown page. */
 data class TrackView(
     val position: Int,
+    val trackId: String,
     val name: String,
     val artists: String,
     val contributors: List<MemberView>,
@@ -28,6 +29,10 @@ data class TrackView(
     val imageUrl: String? = null,
 ) {
     val isShared: Boolean get() = contributors.size > 1
+
+    val trackUrl: String get() = "https://open.spotify.com/track/$trackId"
+
+    val contributorNames: List<String> get() = contributors.map { it.name }
 }
 
 /** Who each song in a blend came from, plus per-person totals to show the balance. */
@@ -72,6 +77,7 @@ data class Breakdown(
             val trackViews = tracks.mapIndexed { index, track ->
                 TrackView(
                     position = index + 1,
+                    trackId = track.trackId,
                     name = track.name,
                     artists = track.artists.joinToString(", "),
                     imageUrl = track.imageUrl,

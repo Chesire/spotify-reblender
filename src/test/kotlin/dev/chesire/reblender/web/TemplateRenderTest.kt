@@ -99,6 +99,8 @@ class TemplateRenderTest {
         assertContains(html, "/playlists/p1/update")
         assertContains(html, "class=\"cover\"")
         assertContains(html, "cover placeholder") // track without artwork
+        assertContains(html, "https://open.spotify.com/track/t1")
+        assertContains(html, "From Chesire, Sam, Alex Morgan")
         assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("breakdown", html)
     }
@@ -128,7 +130,16 @@ class TemplateRenderTest {
         )
         assertContains(html, "href=\"/playlists/p1\"")
         assertContains(html, "Show breakdown")
+        assertContains(html, "<dialog")
+        assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("index", html)
+    }
+
+    @Test
+    fun `signed-out home page offers Spotify login`() {
+        val html = render("index", mapOf("loggedIn" to false))
+        assertContains(html, "/oauth2/authorization/spotify")
+        preview("signin", html)
     }
 
     private fun render(template: String, variables: Map<String, Any>): String =
@@ -138,7 +149,10 @@ class TemplateRenderTest {
     private fun preview(name: String, html: String) {
         val dir = File("build/previews").apply { mkdirs() }
         val css = File("src/main/resources/static/css/app.css").readText()
-        val standalone = html.replace("<link rel=\"stylesheet\" href=\"/css/app.css\">", "<style>\n$css\n</style>")
+        val js = File("src/main/resources/static/js/app.js").readText()
+        val standalone = html
+            .replace("<link rel=\"stylesheet\" href=\"/css/app.css\">", "<style>\n$css\n</style>")
+            .replace("<script src=\"/js/app.js\"></script>", "<script>\n$js\n</script>")
         File(dir, "$name.html").writeText(standalone)
         File(dir, "$name.b64").writeText(Base64.getEncoder().encodeToString(standalone.toByteArray()))
     }

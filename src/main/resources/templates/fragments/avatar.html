@@ -8,7 +8,8 @@
 -->
 <th:block th:fragment="avatar(m, sizeClass)">
     <span class="avatar" th:classappend="${sizeClass}" th:style="${'--c:' + m.colour}"
-          th:attr="data-name=${m.name}">
+          th:attr="data-name=${m.name},aria-label=${m.name}" role="img"
+          th:tabindex="${sizeClass == 'sm'} ? 0 : null">
         <img th:if="${m.avatarUrl}" th:src="${m.avatarUrl}" alt="" referrerpolicy="no-referrer">
         <span th:unless="${m.avatarUrl}" class="initials" th:text="${m.initials}">AB</span>
     </span>

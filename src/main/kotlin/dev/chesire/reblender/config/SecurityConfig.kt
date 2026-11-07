@@ -27,6 +27,7 @@ class SecurityConfig {
                 authorize("/", permitAll)
                 authorize("/error", permitAll)
                 authorize("/css/**", permitAll)
+                authorize("/js/**", permitAll)
                 authorize(anyRequest, authenticated)
             }
             oauth2Login {
