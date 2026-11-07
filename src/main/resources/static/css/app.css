@@ -46,3 +46,7 @@ select, input { background: #2a2a2a; color: var(--text); border: 1px solid #3a3a
 .list li:first-child { border-top: 0; }
 a { color: var(--text); }
 .actions { display: flex; gap: 1rem; }
+fieldset.people { grid-column: 1 / -1; border: 1px solid #3a3a3a; border-radius: 8px; padding: 0.75rem 1rem; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+fieldset.people legend { color: var(--muted); font-size: 0.9rem; padding: 0 0.25rem; }
+fieldset.people p { flex-basis: 100%; margin: 0; }
+label.check { flex-direction: row; align-items: center; gap: 0.4rem; color: var(--text); font-size: 1rem; }

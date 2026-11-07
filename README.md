@@ -8,15 +8,26 @@ Blend often adds random recommendations or lets one person dominate. Reblender o
 
 ## How a playlist is built
 
-Inputs: both users' top 50 tracks for the chosen range, a size N (2–100), and a shared-songs mode.
+A blend is you plus **0–4 other people** who have logged in. With nobody else, you get a playlist of your own top tracks (handy for testing on your own).
 
-1. **Shared songs** (in both users' top lists) go first, ranked by combined position.
-   - *Cap shared songs at a third* (default): at most N/3 shared songs.
-   - *Let shared songs fill it*: shared songs can take every slot.
-2. The rest is split **evenly** between the two users, each using their own top tracks in rank order.
-3. **Odd slot:** it goes to one more shared song if there is one; otherwise the playlist is one song shorter so the split stays even.
-4. If one person runs out of tracks, the other fills the gap. If both run out, leftover shared songs fill in.
-5. Songs are **interleaved** (e.g. `S A B S A B …`) so nobody gets a long run.
+Inputs: everyone's top 50 tracks for the chosen range, a size N (2–100), and a shared-songs mode.
+
+1. **Shared songs** are songs in two or more people's top lists. Songs shared by **everyone** come first, then by one fewer person, and so on down to pairs. Within a tier they're ranked by average position.
+2. **Shared budget** (*Cap shared songs by group size*, the default):
+
+   | People | Shared songs take up to |
+   |---|---|
+   | 1 | none |
+   | 2 | 1/3 |
+   | 3 | 1/2 |
+   | 4 | 2/3 |
+   | 5 | 4/5 |
+
+   *Let shared songs fill it* lets shared songs take every slot. Either way, only songs that really are shared count; if there aren't enough, more slots go to individual picks.
+3. The rest is split **evenly** between everyone, using songs only they have, in rank order.
+4. **Uneven slots** (e.g. 7 left for 2 people): they go to more shared songs if any are left; otherwise the playlist is slightly shorter so the split stays even.
+5. If someone runs out of their own tracks, the others fill their slots. If everyone runs out, leftover shared songs fill in.
+6. Songs are **interleaved** (e.g. `S A B S A B …`) so nobody gets a long run.
 
 Time ranges come from Spotify: **Recent** = `short_term` (~4 weeks), **All-time** = `long_term` (~1 year; Spotify has no true all-time).
 
@@ -24,7 +35,7 @@ Time ranges come from Spotify: **Recent** = `short_term` (~4 weeks), **All-time*
 
 - New Spotify apps run in **Development Mode**: max **5 users**, each added by hand, and the app owner needs **Premium**.
 - **Refresh tokens expire 6 months** after a user logs in. The app tells you who needs to log in again.
-- Both people must log in to the app once; Spotify doesn't expose another user's top tracks.
+- Everyone in a blend must log in to the app once; Spotify doesn't expose another user's top tracks.
 
 ## Setup
 
@@ -57,9 +68,9 @@ Tests: `./gradlew test` (covers the blend engine).
 
 An H2 database file (`./data/` locally, the `reblender-data` volume in Docker) holds:
 
-- `oauth2_authorized_client`: Spotify access and refresh tokens, so the app can read your partner's top tracks when they're not logged in.
+- `oauth2_authorized_client`: Spotify access and refresh tokens, so the app can read other members' top tracks when they're not logged in.
 - `app_user`: everyone who has logged in (Spotify ID and display name).
-- `pairing`: each managed playlist and its settings.
+- `blend` / `blend_member`: each managed playlist, its settings and who's in it.
 
 How the tokens are protected:
 

@@ -38,16 +38,18 @@
 
         <section class="card">
             <h2>New playlist</h2>
-            <p th:if="${#lists.isEmpty(partners)}" class="muted">
-                Nobody else has logged in yet. Ask your partner to open this page and log in with Spotify
-                (they must be on the app's allowlist in the Spotify dashboard).
-            </p>
-            <form th:unless="${#lists.isEmpty(partners)}" th:action="@{/playlists}" method="post" class="grid">
-                <label>Blend with
-                    <select name="partnerId" required>
-                        <option th:each="p : ${partners}" th:value="${p.spotifyId}" th:text="${p.displayName}">Partner</option>
-                    </select>
-                </label>
+            <form th:action="@{/playlists}" method="post" class="grid">
+                <fieldset class="people">
+                    <legend>Blend with (up to <span th:text="${maxPartners}">4</span>, or nobody for just your songs)</legend>
+                    <p th:if="${#lists.isEmpty(partners)}" class="muted small">
+                        Nobody else has logged in yet, so this will be a playlist of your own top tracks.
+                        Others need to open this page and log in with Spotify (and be on the app's allowlist).
+                    </p>
+                    <label th:each="p : ${partners}" class="check">
+                        <input type="checkbox" name="partnerIds" th:value="${p.spotifyId}">
+                        <span th:text="${p.displayName}">Partner</span>
+                    </label>
+                </fieldset>
                 <label>Songs from
                     <select name="timeRange">
                         <option th:each="r : ${timeRanges}" th:value="${r.name()}" th:text="${r.label}">Range</option>
@@ -64,7 +66,9 @@
                 <button type="submit" class="button">Create playlist</button>
             </form>
             <p class="muted small">"Recent" is Spotify's last ~4 weeks; "All-time" is Spotify's ~1 year window.
-                If the split leaves an odd slot it goes to a shared song, or the playlist is one shorter.</p>
+                Shared songs (liked by everyone first, then by fewer people) take up to 1/3 of the playlist for 2 people,
+                1/2 for 3, 2/3 for 4 and 4/5 for 5. The rest is split evenly. Slots that don't divide evenly
+                go to a shared song, or the playlist is slightly shorter.</p>
         </section>
 
         <section class="card">
@@ -73,17 +77,17 @@
             <ul class="list" th:unless="${#lists.isEmpty(playlists)}">
                 <li th:each="row : ${playlists}">
                     <div>
-                        <a th:href="${row.pairing.playlistUrl}" target="_blank" rel="noopener"
-                           th:text="${row.pairing.playlistName}">Playlist</a>
+                        <a th:href="${row.blend.playlistUrl}" target="_blank" rel="noopener"
+                           th:text="${row.blend.playlistName}">Playlist</a>
                         <div class="muted small">
-                            with <span th:text="${row.partnerName}">partner</span>
-                            &middot; <span th:text="${row.pairing.timeRange.label}">range</span>
-                            &middot; <span th:text="${row.pairing.trackCount}">0</span>/<span th:text="${row.pairing.size}">0</span> songs
-                            &middot; <span th:text="${row.pairing.sharedMode.label}">mode</span>
+                            <span th:text="${row.withLabel}">with someone</span>
+                            &middot; <span th:text="${row.blend.timeRange.label}">range</span>
+                            &middot; <span th:text="${row.blend.trackCount}">0</span>/<span th:text="${row.blend.size}">0</span> songs
+                            &middot; <span th:text="${row.blend.sharedMode.label}">mode</span>
                             &middot; updated <span th:text="${row.updatedLabel}">date</span>
                         </div>
                     </div>
-                    <form th:action="@{/playlists/{id}/update(id=${row.pairing.playlistId})}" method="post">
+                    <form th:action="@{/playlists/{id}/update(id=${row.blend.playlistId})}" method="post">
                         <button type="submit" class="button small">Update</button>
                     </form>
                 </li>

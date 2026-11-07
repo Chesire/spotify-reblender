@@ -1,0 +1,117 @@
+package dev.chesire.reblender.playlists
+
+import dev.chesire.reblender.blend.SharedMode
+import dev.chesire.reblender.blend.TimeRange
+import org.springframework.jdbc.core.RowMapper
+import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
+import java.sql.Timestamp
+import java.time.Instant
+
+/** A playlist this app manages: who's in it and how to rebuild it. */
+data class Blend(
+    val playlistId: String,
+    val playlistName: String,
+    val playlistUrl: String,
+    val ownerId: String,
+    /** Everyone in the blend, owner first. One entry means a solo playlist. */
+    val memberIds: List<String>,
+    val timeRange: TimeRange,
+    val size: Int,
+    val sharedMode: SharedMode,
+    val trackCount: Int,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+)
+
+@Repository
+class BlendRepository(private val jdbc: JdbcClient) {
+
+    private val rowMapper = RowMapper { rs, _ ->
+        Blend(
+            playlistId = rs.getString("playlist_id"),
+            playlistName = rs.getString("playlist_name"),
+            playlistUrl = rs.getString("playlist_url"),
+            ownerId = rs.getString("owner_id"),
+            memberIds = emptyList(),
+            timeRange = TimeRange.valueOf(rs.getString("time_range")),
+            size = rs.getInt("size"),
+            sharedMode = SharedMode.valueOf(rs.getString("shared_mode")),
+            trackCount = rs.getInt("track_count"),
+            createdAt = rs.getTimestamp("created_at").toInstant(),
+            updatedAt = rs.getTimestamp("updated_at").toInstant(),
+        )
+    }
+
+    @Transactional
+    fun insert(blend: Blend) {
+        jdbc.sql(
+            """
+            INSERT INTO blend (playlist_id, playlist_name, playlist_url, owner_id,
+                               time_range, size, shared_mode, track_count, created_at, updated_at)
+            VALUES (:playlistId, :name, :url, :owner, :range, :size, :mode, :count, :created, :updated)
+            """.trimIndent(),
+        )
+            .param("playlistId", blend.playlistId)
+            .param("name", blend.playlistName)
+            .param("url", blend.playlistUrl)
+            .param("owner", blend.ownerId)
+            .param("range", blend.timeRange.name)
+            .param("size", blend.size)
+            .param("mode", blend.sharedMode.name)
+            .param("count", blend.trackCount)
+            .param("created", Timestamp.from(blend.createdAt))
+            .param("updated", Timestamp.from(blend.updatedAt))
+            .update()
+
+        blend.memberIds.forEachIndexed { index, memberId ->
+            jdbc.sql("INSERT INTO blend_member (playlist_id, spotify_id, member_order) VALUES (:id, :member, :order)")
+                .param("id", blend.playlistId)
+                .param("member", memberId)
+                .param("order", index)
+                .update()
+        }
+    }
+
+    fun markRefreshed(playlistId: String, trackCount: Int, at: Instant) {
+        jdbc.sql("UPDATE blend SET track_count = :count, updated_at = :at WHERE playlist_id = :id")
+            .param("count", trackCount)
+            .param("at", Timestamp.from(at))
+            .param("id", playlistId)
+            .update()
+    }
+
+    fun findByOwner(ownerId: String): List<Blend> =
+        jdbc.sql("SELECT * FROM blend WHERE owner_id = :owner ORDER BY created_at DESC")
+            .param("owner", ownerId)
+            .query(rowMapper)
+            .list()
+            .map(::withMembers)
+
+    fun findByIdAndOwner(playlistId: String, ownerId: String): Blend? =
+        jdbc.sql("SELECT * FROM blend WHERE playlist_id = :id AND owner_id = :owner")
+            .param("id", playlistId)
+            .param("owner", ownerId)
+            .query(rowMapper)
+            .optional()
+            .map(::withMembers)
+            .orElse(null)
+
+    /** Removes every blend the user is in (as owner or member). The Spotify playlists themselves are left alone. */
+    fun deleteInvolving(spotifyId: String) {
+        jdbc.sql(
+            "DELETE FROM blend WHERE playlist_id IN (SELECT playlist_id FROM blend_member WHERE spotify_id = :id)",
+        )
+            .param("id", spotifyId)
+            .update()
+    }
+
+    private fun withMembers(blend: Blend): Blend {
+        val members = jdbc.sql("SELECT spotify_id FROM blend_member WHERE playlist_id = :id ORDER BY member_order")
+            .param("id", blend.playlistId)
+            .query(String::class.java)
+            .list()
+        return blend.copy(memberIds = members)
+    }
+}

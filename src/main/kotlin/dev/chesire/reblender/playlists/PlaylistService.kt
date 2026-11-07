@@ -2,6 +2,7 @@ package dev.chesire.reblender.playlists
 
 import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.blend.BlendedTrack
+import dev.chesire.reblender.blend.Participant
 import dev.chesire.reblender.blend.SharedMode
 import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.spotify.SpotifyClient
@@ -13,70 +14,98 @@ import java.time.Instant
 class PlaylistService(
     private val spotify: SpotifyClient,
     private val users: UserRepository,
-    private val pairings: PairingRepository,
+    private val blends: BlendRepository,
 ) {
 
-    fun create(ownerId: String, partnerId: String, timeRange: TimeRange, size: Int, sharedMode: SharedMode): Pairing {
-        require(ownerId != partnerId) { "Pick someone other than yourself." }
+    /**
+     * Creates a playlist owned by [ownerId] from the owner plus up to four [partnerIds].
+     * No partners gives a playlist of just the owner's top tracks.
+     */
+    fun create(
+        ownerId: String,
+        partnerIds: List<String>,
+        timeRange: TimeRange,
+        size: Int,
+        sharedMode: SharedMode,
+    ): Blend {
+        val partners = partnerIds.filter { it.isNotBlank() }.distinct()
+        require(ownerId !in partners) { "You're always in your own blend; pick other people." }
+        require(partners.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
+            "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
+        }
         require(size in BlendEngine.MIN_SIZE..MAX_SIZE) { "Size must be between ${BlendEngine.MIN_SIZE} and $MAX_SIZE." }
-        val owner = users.findById(ownerId) ?: throw IllegalArgumentException("Unknown user. Log out and in again.")
-        val partner = users.findById(partnerId) ?: throw IllegalArgumentException("That partner hasn't logged in yet.")
 
-        val blended = buildBlend(ownerId, partnerId, timeRange, size, sharedMode)
+        val memberIds = listOf(ownerId) + partners
+        val names = memberIds.map { id ->
+            users.findById(id)?.displayName
+                ?: throw IllegalArgumentException(if (id == ownerId) "Unknown user. Log out and in again." else "Someone you picked hasn't logged in yet.")
+        }
+
+        val blended = buildBlend(memberIds, timeRange, size, sharedMode)
 
         // ASCII only and well under Spotify's description limit.
-        val name = "${owner.displayName} & ${partner.displayName} - ${timeRange.label}"
-        val description = "Balanced blend of ${owner.displayName} and ${partner.displayName}'s " +
-            "${timeRange.label.lowercase()}. Rebuilt by spotify-reblender."
+        val name = "${joinNames(names)} - ${timeRange.label}"
+        val description = if (names.size == 1) {
+            "${names[0]}'s ${timeRange.label.lowercase()}. Rebuilt by spotify-reblender."
+        } else {
+            "Balanced blend of ${joinNames(names, conjunction = "and")}'s ${timeRange.label.lowercase()}. Rebuilt by spotify-reblender."
+        }
         val playlist = spotify.createPlaylist(ownerId, name, description)
         spotify.replaceItems(ownerId, playlist.id, blended.map { it.track.uri })
 
         val now = Instant.now()
-        return Pairing(
+        return Blend(
             playlistId = playlist.id,
             playlistName = name,
             playlistUrl = playlist.url,
             ownerId = ownerId,
-            partnerId = partnerId,
+            memberIds = memberIds,
             timeRange = timeRange,
             size = size,
             sharedMode = sharedMode,
             trackCount = blended.size,
             createdAt = now,
             updatedAt = now,
-        ).also(pairings::insert)
+        ).also(blends::insert)
     }
 
     /** Re-runs the blend with fresh top tracks and replaces the playlist contents. */
-    fun update(ownerId: String, playlistId: String): Pairing {
-        val pairing = pairings.findByIdAndOwner(playlistId, ownerId)
+    fun update(ownerId: String, playlistId: String): Blend {
+        val blend = blends.findByIdAndOwner(playlistId, ownerId)
             ?: throw IllegalArgumentException("That playlist isn't one of yours.")
-        val blended = buildBlend(ownerId, pairing.partnerId, pairing.timeRange, pairing.size, pairing.sharedMode)
+        val blended = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode)
         spotify.replaceItems(ownerId, playlistId, blended.map { it.track.uri })
         val now = Instant.now()
-        pairings.markRefreshed(playlistId, blended.size, now)
-        return pairing.copy(trackCount = blended.size, updatedAt = now)
+        blends.markRefreshed(playlistId, blended.size, now)
+        return blend.copy(trackCount = blended.size, updatedAt = now)
     }
 
-    fun playlistsFor(ownerId: String): List<Pairing> = pairings.findByOwner(ownerId)
+    fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwner(ownerId)
 
     private fun buildBlend(
-        ownerId: String,
-        partnerId: String,
+        memberIds: List<String>,
         timeRange: TimeRange,
         size: Int,
         sharedMode: SharedMode,
     ): List<BlendedTrack> {
-        // Partner first: if their login has expired we fail before touching anything.
-        val partnerTracks = spotify.topTracks(partnerId, timeRange)
-        val ownerTracks = spotify.topTracks(ownerId, timeRange)
-        val blended = BlendEngine.blend(ownerTracks, partnerTracks, size, sharedMode)
-        require(blended.isNotEmpty()) { "Neither of you has any top tracks for that time range yet." }
+        // Others first: if someone's login has expired we fail before touching the owner's playlist.
+        val tracksById = (memberIds.drop(1) + memberIds.first())
+            .associateWith { spotify.topTracks(it, timeRange) }
+        val participants = memberIds.map { Participant(it, tracksById.getValue(it)) }
+        val blended = BlendEngine.blend(participants, size, sharedMode)
+        require(blended.isNotEmpty()) { "Nobody in this blend has any top tracks for that time range yet." }
         return blended
     }
 
     companion object {
-        /** Two users x 50 top tracks, and Spotify's 100-item limit for a single replace. */
+        /** Spotify's 100-item limit for a single replace. */
         const val MAX_SIZE = 100
+
+        /** "A", "A & B", "A, B & C" (or with "and" for prose). */
+        fun joinNames(names: List<String>, conjunction: String = "&"): String = when (names.size) {
+            0 -> ""
+            1 -> names[0]
+            else -> names.dropLast(1).joinToString(", ") + " $conjunction " + names.last()
+        }
     }
 }

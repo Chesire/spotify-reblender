@@ -2,7 +2,8 @@ package dev.chesire.reblender.web
 
 import dev.chesire.reblender.blend.SharedMode
 import dev.chesire.reblender.blend.TimeRange
-import dev.chesire.reblender.playlists.Pairing
+import dev.chesire.reblender.blend.BlendEngine
+import dev.chesire.reblender.playlists.Blend
 import dev.chesire.reblender.playlists.PlaylistService
 import dev.chesire.reblender.spotify.ReloginRequiredException
 import dev.chesire.reblender.users.AccountService
@@ -50,9 +51,15 @@ class HomeController(
         model.addAttribute("loggedIn", true)
         model.addAttribute("me", names[me] ?: me)
         model.addAttribute("partners", allUsers.filter { it.spotifyId != me })
-        model.addAttribute("playlists", playlists.playlistsFor(me).map {
-                PlaylistRow(it, names[it.partnerId] ?: it.partnerId, UPDATED_FORMAT.format(it.updatedAt))
-            })
+        model.addAttribute("maxPartners", BlendEngine.MAX_PARTICIPANTS - 1)
+        model.addAttribute("playlists", playlists.playlistsFor(me).map { blend ->
+            val others = blend.memberIds.drop(1).map { names[it] ?: it }
+            PlaylistRow(
+                blend = blend,
+                withLabel = if (others.isEmpty()) "just you" else "with " + PlaylistService.joinNames(others, "and"),
+                updatedLabel = UPDATED_FORMAT.format(blend.updatedAt),
+            )
+        })
         model.addAttribute("timeRanges", TimeRange.entries)
         model.addAttribute("sharedModes", SharedMode.entries)
         model.addAttribute("defaultSize", DEFAULT_SIZE)
@@ -63,15 +70,15 @@ class HomeController(
     @PostMapping("/playlists")
     fun create(
         @AuthenticationPrincipal principal: OAuth2User,
-        @RequestParam partnerId: String,
+        @RequestParam(name = "partnerIds", required = false) partnerIds: List<String>?,
         @RequestParam timeRange: TimeRange,
         @RequestParam size: Int,
         @RequestParam sharedMode: SharedMode,
         redirect: RedirectAttributes,
     ): String {
         handle(principal.name, redirect) {
-            val pairing = playlists.create(principal.name, partnerId, timeRange, size, sharedMode)
-            "Created \"${pairing.playlistName}\" with ${pairing.trackCount} songs."
+            val blend = playlists.create(principal.name, partnerIds.orEmpty(), timeRange, size, sharedMode)
+            "Created \"${blend.playlistName}\" with ${blend.trackCount} songs."
         }
         return "redirect:/"
     }
@@ -83,8 +90,8 @@ class HomeController(
         redirect: RedirectAttributes,
     ): String {
         handle(principal.name, redirect) {
-            val pairing = playlists.update(principal.name, playlistId)
-            "Updated \"${pairing.playlistName}\" with ${pairing.trackCount} songs."
+            val blend = playlists.update(principal.name, playlistId)
+            "Updated \"${blend.playlistName}\" with ${blend.trackCount} songs."
         }
         return "redirect:/"
     }
@@ -117,7 +124,7 @@ class HomeController(
         } catch (e: RestClientResponseException) {
             log.warn("Spotify API error {}: {}", e.statusCode, e.responseBodyAsString)
             val text = when (e.statusCode.value()) {
-                403 -> "Spotify refused the request (403). Check both users are on the app's allowlist in the Spotify dashboard."
+                403 -> "Spotify refused the request (403). Check everyone in the blend is on the app's allowlist in the Spotify dashboard."
                 404 -> "Spotify couldn't find that playlist. It may have been deleted."
                 429 -> "Spotify is rate limiting the app. Try again in a minute."
                 else -> "Spotify returned an error (${e.statusCode.value()})."
@@ -128,7 +135,7 @@ class HomeController(
         }
     }
 
-    data class PlaylistRow(val pairing: Pairing, val partnerName: String, val updatedLabel: String)
+    data class PlaylistRow(val blend: Blend, val withLabel: String, val updatedLabel: String)
 
     companion object {
         const val DEFAULT_SIZE = 40

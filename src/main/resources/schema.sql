@@ -22,16 +22,24 @@ CREATE TABLE IF NOT EXISTS app_user (
 );
 
 -- One row per playlist the app manages.
-CREATE TABLE IF NOT EXISTS pairing (
+CREATE TABLE IF NOT EXISTS blend (
     playlist_id   VARCHAR(100) PRIMARY KEY,
     playlist_name VARCHAR(300) NOT NULL,
     playlist_url  VARCHAR(500) NOT NULL,
     owner_id      VARCHAR(200) NOT NULL,
-    partner_id    VARCHAR(200) NOT NULL,
     time_range    VARCHAR(20)  NOT NULL,
     size          INT          NOT NULL,
     shared_mode   VARCHAR(20)  NOT NULL,
     track_count   INT          NOT NULL,
     created_at    TIMESTAMP    NOT NULL,
     updated_at    TIMESTAMP    NOT NULL
+);
+
+-- Everyone in a blend (1-5 people), owner included, in display order.
+CREATE TABLE IF NOT EXISTS blend_member (
+    playlist_id  VARCHAR(100) NOT NULL,
+    spotify_id   VARCHAR(200) NOT NULL,
+    member_order INT          NOT NULL,
+    PRIMARY KEY (playlist_id, spotify_id),
+    FOREIGN KEY (playlist_id) REFERENCES blend (playlist_id) ON DELETE CASCADE
 );
