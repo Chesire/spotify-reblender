@@ -178,6 +178,25 @@ jobs:
           echo "Anonymous POST /playlists -> $code"
           test "$code" != "200"
 
+      - name: Requests are logged without secrets
+        run: |
+          # A fake OAuth callback: its code and state must never reach the log.
+          curl -s -o /dev/null "http://127.0.0.1:8080/login/oauth2/code/spotify?code=SECRETCODE123&state=SECRETSTATE456"
+          challenge=$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/oauth2/authorization/spotify \
+            | sed -n 's/.*code_challenge=\([^&]*\).*/\1/p')
+          session=$(curl -s -D - -o /dev/null http://127.0.0.1:8080/oauth2/authorization/spotify \
+            | sed -n 's/^[Ss]et-[Cc]ookie: JSESSIONID=\([^;]*\).*/\1/p')
+          sleep 1
+          docker logs reblender > app.log 2>&1
+          grep "reblender.http.in" app.log | tail -n 20
+          grep -q "IN  GET / -> 200" app.log
+          grep -q "IN  GET /oauth2/authorization/spotify -> 302" app.log
+          grep -q "IN  GET /login/oauth2/code/spotify?code=\*\*\*&state=\*\*\*" app.log
+          for secret in SECRETCODE123 SECRETSTATE456 "$challenge" "$session"; do
+            test -n "$secret" || { echo "empty secret value"; exit 1; }
+            if grep -qF "$secret" app.log; then echo "secret value found in the log"; exit 1; fi
+          done
+
       - name: Session cookie is Secure when the public URL is https (S3)
         run: |
           docker run -d --name reblender-https \

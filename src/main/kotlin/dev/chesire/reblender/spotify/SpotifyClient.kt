@@ -3,6 +3,7 @@ package dev.chesire.reblender.spotify
 import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.blend.Track
 import dev.chesire.reblender.config.ReblenderProperties
+import dev.chesire.reblender.logging.OutgoingRequestLogger
 import dev.chesire.reblender.security.SafeUrls
 import dev.chesire.reblender.security.SpotifyIds
 import kotlinx.serialization.json.Json
@@ -24,7 +25,10 @@ class SpotifyClient(
     private val tokens: SpotifyTokens,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val rest = RestClient.builder().baseUrl(properties.spotifyApiBaseUrl).build()
+    private val rest = RestClient.builder()
+        .baseUrl(properties.spotifyApiBaseUrl)
+        .requestInterceptor(OutgoingRequestLogger())
+        .build()
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false

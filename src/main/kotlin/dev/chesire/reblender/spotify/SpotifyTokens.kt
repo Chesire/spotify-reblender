@@ -4,6 +4,7 @@ import org.springframework.security.oauth2.client.ClientAuthorizationException
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.stereotype.Component
+import org.slf4j.LoggerFactory
 
 /** Thrown when a user has no usable token (never logged in, revoked, or the 6-month refresh token expired). */
 class ReloginRequiredException(val spotifyId: String) :
@@ -23,6 +24,8 @@ class SpotifyTokens(
             clientManager.authorize(request)
         } catch (e: ClientAuthorizationException) {
             // e.g. invalid_grant: the refresh token has expired. The stored client is removed by Spring.
+            // Only the OAuth error code is logged; the exception never carries token values.
+            LoggerFactory.getLogger(javaClass).warn("Token refresh for {} failed: {}", spotifyId, e.error.errorCode)
             throw ReloginRequiredException(spotifyId)
         }
         return client?.accessToken?.tokenValue ?: throw ReloginRequiredException(spotifyId)

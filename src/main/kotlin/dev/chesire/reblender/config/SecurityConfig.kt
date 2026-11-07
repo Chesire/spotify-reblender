@@ -1,5 +1,6 @@
 package dev.chesire.reblender.config
 
+import dev.chesire.reblender.logging.OutgoingRequestLogger
 import dev.chesire.reblender.security.EncryptedJdbcAuthorizedClientService
 import dev.chesire.reblender.security.EncryptionKeySource
 import dev.chesire.reblender.security.TokenCipher
@@ -15,6 +16,14 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient
+import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter
+import org.springframework.http.converter.FormHttpMessageConverter
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.RestTemplate
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers
 import org.springframework.security.web.SecurityFilterChain
@@ -44,6 +53,15 @@ class SecurityConfig {
                 // S6: PKCE on the authorization-code flow, as the OAuth 2.0 Security BCP recommends for all clients.
                 authorizationEndpoint {
                     authorizationRequestResolver = pkceAuthorizationRequestResolver(clientRegistrations)
+                }
+                // Same clients Spring uses by default, plus request logging (no headers or bodies).
+                tokenEndpoint {
+                    accessTokenResponseClient = RestClientAuthorizationCodeTokenResponseClient().apply {
+                        setRestClient(loggingTokenRestClient())
+                    }
+                }
+                userInfoEndpoint {
+                    userService = DefaultOAuth2UserService().apply { setRestOperations(loggingUserInfoRestTemplate()) }
                 }
             }
             logout {
@@ -96,9 +114,31 @@ class SecurityConfig {
         AuthorizedClientServiceOAuth2AuthorizedClientManager(clientRegistrations, authorizedClientService).apply {
             setAuthorizedClientProvider(
                 OAuth2AuthorizedClientProviderBuilder.builder()
-                    .refreshToken()
+                    .refreshToken { refresh ->
+                        refresh.accessTokenResponseClient(
+                            RestClientRefreshTokenTokenResponseClient().apply { setRestClient(loggingTokenRestClient()) },
+                        )
+                    }
                     .build(),
             )
+        }
+
+    /** Mirrors Spring Security's default token-endpoint RestClient, with [OutgoingRequestLogger] added. */
+    private fun loggingTokenRestClient(): RestClient =
+        RestClient.builder()
+            .configureMessageConverters { converters ->
+                converters.addCustomConverter(FormHttpMessageConverter())
+                converters.addCustomConverter(OAuth2AccessTokenResponseHttpMessageConverter())
+            }
+            .defaultStatusHandler(OAuth2ErrorResponseErrorHandler())
+            .requestInterceptor(OutgoingRequestLogger())
+            .build()
+
+    /** Mirrors DefaultOAuth2UserService's default RestTemplate, with [OutgoingRequestLogger] added. */
+    private fun loggingUserInfoRestTemplate(): RestTemplate =
+        RestTemplate().apply {
+            errorHandler = OAuth2ErrorResponseErrorHandler()
+            interceptors.add(OutgoingRequestLogger())
         }
 
     companion object {

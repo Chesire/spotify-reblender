@@ -62,7 +62,26 @@ set -a; . ./.env; set +a   # same values as Docker, incl. a fixed TOKEN_ENCRYPTI
 
 Open <http://127.0.0.1:8080> and log in. To blend with others, have each of them log in too (on the same machine in a private window, unless you serve the app over HTTPS). Tick who to include (or nobody for a solo playlist), choose the range, size and shared mode, and create the playlist. Use **Update** to rebuild it with current top tracks.
 
-Tests: `./gradlew test` (covers the blend engine).
+Tests: `./gradlew test`.
+
+### Logs
+
+Everything goes to the console (`docker compose logs -f`). Each request the app receives and each call it makes to Spotify gets one line:
+
+```
+IN  POST /playlists -> 302 (1840 ms) user=abc123
+OUT GET https://api.spotify.com/v1/me/top/tracks?time_range=short_term&limit=50 -> 200 (212 ms, 48213 bytes)
+OUT DELETE https://api.spotify.com/v1/me/library?uris=spotify:playlist:… -> 403 (95 ms): {"error": {"status": 403, "message": "Insufficient client scope" } }
+```
+
+Tokens are never logged:
+- Headers aren't logged, so no cookies, CSRF tokens or `Authorization` headers.
+- Request bodies aren't logged. These include the CSRF token, and on token requests the authorization code, PKCE verifier and refresh token.
+- Successful response bodies aren't logged, since token responses contain the tokens.
+- Query values are only shown for an allowlist of harmless parameters; everything else (like the OAuth `code` and `state`) shows as `***`.
+- Error bodies from Spotify are logged, shortened, with anything token-like masked.
+
+CI checks that a fake OAuth code, the PKCE challenge and the session ID never appear in the log.
 
 ## Storage and security
 
