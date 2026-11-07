@@ -112,6 +112,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
             .param("id", blend.playlistId)
             .query(String::class.java)
             .list()
+            .filterNotNull()
         return blend.copy(memberIds = members)
     }
 }
