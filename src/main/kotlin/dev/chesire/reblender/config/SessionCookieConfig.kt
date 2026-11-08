@@ -12,7 +12,6 @@ import org.springframework.core.env.Environment
  */
 @Configuration
 class SessionCookieConfig {
-
     @Bean
     fun secureSessionCookie(env: Environment): ServletContextInitializer {
         val baseUrl = env.getProperty("APP_BASE_URL")
@@ -31,7 +30,10 @@ class SessionCookieConfig {
 
 object SessionCookiePolicy {
     /** An explicit "true"/"false" override wins; otherwise Secure follows the scheme of the public base URL. */
-    fun secure(override: String?, baseUrl: String?): Boolean =
+    fun secure(
+        override: String?,
+        baseUrl: String?,
+    ): Boolean =
         when (override?.trim()?.lowercase()) {
             "true" -> true
             "false" -> false

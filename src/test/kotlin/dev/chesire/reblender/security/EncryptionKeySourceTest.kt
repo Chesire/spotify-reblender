@@ -6,7 +6,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class EncryptionKeySourceTest {
-
     @Test
     fun `uses the inline key when no file is set`() {
         assertEquals("inline", EncryptionKeySource.resolve("inline", ""))

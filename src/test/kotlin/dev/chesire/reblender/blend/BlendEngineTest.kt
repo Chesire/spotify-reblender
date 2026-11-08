@@ -10,23 +10,31 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class BlendEngineTest {
-
-    private fun tracks(prefix: String, count: Int) =
-        (1..count).map { Track(id = "$prefix$it", uri = "spotify:track:$prefix$it", name = "$prefix$it", artists = listOf("x")) }
+    private fun tracks(
+        prefix: String,
+        count: Int,
+    ) = (1..count).map { Track(id = "$prefix$it", uri = "spotify:track:$prefix$it", name = "$prefix$it", artists = listOf("x")) }
 
     private fun track(id: String) = Track(id = id, uri = "spotify:track:$id", name = id, artists = listOf("x"))
 
-    private fun p(id: String, tracks: List<Track>) = Participant(id, tracks)
+    private fun p(
+        id: String,
+        tracks: List<Track>,
+    ) = Participant(id, tracks)
 
-    private fun blend2(a: List<Track>, b: List<Track>, size: Int, mode: SharedMode = SharedMode.CAPPED) =
-        BlendEngine.blend(listOf(p("a", a), p("b", b)), size, mode)
+    private fun blend2(
+        a: List<Track>,
+        b: List<Track>,
+        size: Int,
+        mode: SharedMode = SharedMode.CAPPED,
+    ) = BlendEngine.blend(listOf(p("a", a), p("b", b)), size, mode)
 
     private fun List<BlendedTrack>.shared() = count { it.isShared }
+
     private fun List<BlendedTrack>.soloOf(id: String) = count { it.contributors == setOf(id) }
 
     /** S for shared, otherwise the contributor's id upper-cased. */
-    private fun List<BlendedTrack>.pattern() =
-        joinToString("") { if (it.isShared) "S" else it.contributors.single().uppercase() }
+    private fun List<BlendedTrack>.pattern() = joinToString("") { if (it.isShared) "S" else it.contributors.single().uppercase() }
 
     // ---- Two people (original rules) ----
 
@@ -167,11 +175,12 @@ class BlendEngineTest {
     fun `three people prefer songs shared by everyone, then by fewer`() {
         val all3 = tracks("t", 6)
         val ab = tracks("ab", 20)
-        val people = listOf(
-            p("a", all3 + ab + tracks("a", 30)),
-            p("b", all3 + ab + tracks("b", 30)),
-            p("c", all3 + tracks("c", 30)),
-        )
+        val people =
+            listOf(
+                p("a", all3 + ab + tracks("a", 30)),
+                p("b", all3 + ab + tracks("b", 30)),
+                p("c", all3 + tracks("c", 30)),
+            )
         val result = BlendEngine.blend(people, 30, SharedMode.CAPPED)
         assertEquals(30, result.size)
         assertEquals(15, result.shared()) // 50% of 30
@@ -208,9 +217,10 @@ class BlendEngineTest {
     fun `five people use lower tiers when not enough songs are shared by all`() {
         val all5 = tracks("all", 4)
         val trio = tracks("trio", 20)
-        val people = (1..5).map { i ->
-            p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
-        }
+        val people =
+            (1..5).map { i ->
+                p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
+            }
         val result = BlendEngine.blend(people, 20, SharedMode.CAPPED)
         val shared = result.filter { it.isShared }
         // Budget is 16 (80%); the 4 slots left can't split 5 ways, so they go to spare shared songs too.
@@ -224,9 +234,10 @@ class BlendEngineTest {
     fun `five people with a larger playlist mix shared and solo`() {
         val all5 = tracks("all", 4)
         val trio = tracks("trio", 20)
-        val people = (1..5).map { i ->
-            p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
-        }
+        val people =
+            (1..5).map { i ->
+                p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
+            }
         val result = BlendEngine.blend(people, 30, SharedMode.CAPPED)
         // Budget 24 shared and exactly 24 exist; 6 left -> 1 each, and the uneven slot is dropped (no spare shared).
         assertEquals(29, result.size)

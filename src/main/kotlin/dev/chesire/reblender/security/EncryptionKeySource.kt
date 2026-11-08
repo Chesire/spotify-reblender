@@ -10,8 +10,10 @@ import java.nio.file.Path
  *   or with a TPM-sealed systemd credential so the key only decrypts on this machine.
  */
 object EncryptionKeySource {
-
-    fun resolve(inlineKey: String, keyFile: String): String {
+    fun resolve(
+        inlineKey: String,
+        keyFile: String,
+    ): String {
         val hasInline = inlineKey.isNotBlank()
         val hasFile = keyFile.isNotBlank()
         require(!(hasInline && hasFile)) {

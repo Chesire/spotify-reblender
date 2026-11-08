@@ -32,7 +32,6 @@ import org.springframework.web.client.RestTemplate
 
 @Configuration
 class SecurityConfig {
-
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
@@ -54,9 +53,10 @@ class SecurityConfig {
                     authorizationRequestResolver = pkceAuthorizationRequestResolver(clientRegistrations)
                 }
                 tokenEndpoint {
-                    accessTokenResponseClient = RestClientAuthorizationCodeTokenResponseClient().apply {
-                        setRestClient(loggingTokenRestClient())
-                    }
+                    accessTokenResponseClient =
+                        RestClientAuthorizationCodeTokenResponseClient().apply {
+                            setRestClient(loggingTokenRestClient())
+                        }
                 }
                 userInfoEndpoint {
                     userService = DefaultOAuth2UserService().apply { setRestOperations(loggingUserInfoRestTemplate()) }
@@ -96,8 +96,7 @@ class SecurityConfig {
         jdbcTemplate: JdbcTemplate,
         clientRegistrations: ClientRegistrationRepository,
         tokenCipher: TokenCipher,
-    ): OAuth2AuthorizedClientService =
-        EncryptedJdbcAuthorizedClientService(jdbcTemplate, clientRegistrations, tokenCipher)
+    ): OAuth2AuthorizedClientService = EncryptedJdbcAuthorizedClientService(jdbcTemplate, clientRegistrations, tokenCipher)
 
     /**
      * Works outside an HTTP request/session: loads a stored client by principal name
@@ -110,24 +109,24 @@ class SecurityConfig {
     ): OAuth2AuthorizedClientManager =
         AuthorizedClientServiceOAuth2AuthorizedClientManager(clientRegistrations, authorizedClientService).apply {
             setAuthorizedClientProvider(
-                OAuth2AuthorizedClientProviderBuilder.builder()
+                OAuth2AuthorizedClientProviderBuilder
+                    .builder()
                     .refreshToken { refresh ->
                         refresh.accessTokenResponseClient(
                             RestClientRefreshTokenTokenResponseClient().apply { setRestClient(loggingTokenRestClient()) },
                         )
-                    }
-                    .build(),
+                    }.build(),
             )
         }
 
     /** Mirrors Spring Security's default token-endpoint RestClient, with [OutgoingRequestLogger] added. */
     private fun loggingTokenRestClient(): RestClient =
-        RestClient.builder()
+        RestClient
+            .builder()
             .configureMessageConverters { converters ->
                 converters.addCustomConverter(FormHttpMessageConverter())
                 converters.addCustomConverter(OAuth2AccessTokenResponseHttpMessageConverter())
-            }
-            .defaultStatusHandler(OAuth2ErrorResponseErrorHandler())
+            }.defaultStatusHandler(OAuth2ErrorResponseErrorHandler())
             .requestInterceptor(OutgoingRequestLogger())
             .build()
 

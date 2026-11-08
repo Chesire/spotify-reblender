@@ -23,7 +23,11 @@ import org.springframework.web.filter.OncePerRequestFilter
 class IncomingRequestLogFilter : OncePerRequestFilter() {
     private val log = LoggerFactory.getLogger("reblender.http.in")
 
-    override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain) {
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        chain: FilterChain,
+    ) {
         val start = System.nanoTime()
         val target = LogRedaction.target(request.requestURI, request.queryString)
         try {
@@ -40,10 +44,12 @@ class IncomingRequestLogFilter : OncePerRequestFilter() {
 
     /** The logged-in Spotify user, read from the session after the request (the security context is cleared by then). */
     private fun user(request: HttpServletRequest): String {
-        val context = runCatching {
-            request.getSession(false)
-                ?.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) as? SecurityContext
-        }.getOrNull() // the session may have just been invalidated (logout)
+        val context =
+            runCatching {
+                request
+                    .getSession(false)
+                    ?.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) as? SecurityContext
+            }.getOrNull() // the session may have just been invalidated (logout)
         return context?.authentication?.name?.let { " user=$it" } ?: ""
     }
 

@@ -2,7 +2,6 @@ package dev.chesire.reblender.security
 
 /** Shape checks for Spotify identifiers, applied to anything that arrives from a request or from Spotify. */
 object SpotifyIds {
-
     /** Playlist and track IDs are 22-character base62 strings. */
     private val BASE62_ID = Regex("^[A-Za-z0-9]{22}$")
 

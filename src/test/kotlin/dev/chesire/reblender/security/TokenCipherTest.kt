@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class TokenCipherTest {
-
     private val key = Base64.getEncoder().encodeToString(ByteArray(32) { it.toByte() })
     private val otherKey = Base64.getEncoder().encodeToString(ByteArray(32) { (it + 1).toByte() })
     private val aad = TokenCipher.associatedData("spotify", "user-a")

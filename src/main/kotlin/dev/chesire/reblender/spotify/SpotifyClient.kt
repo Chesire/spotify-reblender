@@ -28,62 +28,90 @@ class SpotifyClient(
     private val tokens: SpotifyTokens,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val rest = RestClient.builder()
-        .baseUrl(properties.spotifyApiBaseUrl)
-        .requestInterceptor(OutgoingRequestLogger())
-        .build()
-    private val json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
-    }
+    private val rest =
+        RestClient
+            .builder()
+            .baseUrl(properties.spotifyApiBaseUrl)
+            .requestInterceptor(OutgoingRequestLogger())
+            .build()
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        }
 
     /** Up to 50 of [spotifyId]'s top tracks for [range], best first. */
-    fun topTracks(spotifyId: String, range: TimeRange): List<Track> {
-        val body = rest.get()
-            .uri("/me/top/tracks?time_range={range}&limit={limit}", range.spotifyValue, TOP_TRACKS_LIMIT)
-            .headers { it.setBearerAuth(tokens.accessTokenFor(spotifyId)) }
-            .retrieve()
-            .body(String::class.java)
-            ?: return emptyList()
+    fun topTracks(
+        spotifyId: String,
+        range: TimeRange,
+    ): List<Track> {
+        val body =
+            rest
+                .get()
+                .uri("/me/top/tracks?time_range={range}&limit={limit}", range.spotifyValue, TOP_TRACKS_LIMIT)
+                .headers { it.setBearerAuth(tokens.accessTokenFor(spotifyId)) }
+                .retrieve()
+                .body(String::class.java)
+                ?: return emptyList()
 
         val items = json.decodeFromString(TopTracksResponse.serializer(), body).items
         val local = items.count { it.isLocal }
         val missingId = items.count { !it.isLocal && (it.id == null || it.uri == null) }
         // Only well-formed IDs whose URI is exactly spotify:track:<id> are used (they end up in links and API calls).
         val malformed = items.count { !it.isLocal && it.id != null && it.uri != null && !isValidTrack(it.id, it.uri) }
-        val tracks = items
-            .filter { !it.isLocal && it.id != null && it.uri != null && isValidTrack(it.id, it.uri) }
-            .map {
-                Track(
-                    id = it.id!!,
-                    uri = it.uri!!,
-                    name = it.name,
-                    artists = it.artists.map(ArtistDto::name),
-                    imageUrl = SpotifyImages.pick(it.album?.images.orEmpty().mapNotNull { img -> img.url?.let { url -> url to img.height } }),
-                )
-            }
+        val tracks =
+            items
+                .filter { !it.isLocal && it.id != null && it.uri != null && isValidTrack(it.id, it.uri) }
+                .map {
+                    Track(
+                        id = it.id!!,
+                        uri = it.uri!!,
+                        name = it.name,
+                        artists = it.artists.map(ArtistDto::name),
+                        imageUrl =
+                            SpotifyImages.pick(
+                                it.album?.images.orEmpty().mapNotNull { img ->
+                                    img.url?.let { url -> url to img.height }
+                                },
+                            ),
+                    )
+                }
         log.info(
             "Top tracks for {} ({}): Spotify returned {} of {} requested; skipped {} local file(s), {} without an ID " +
                 "and {} with a malformed ID; {} usable",
-            spotifyId, range.spotifyValue, items.size, TOP_TRACKS_LIMIT, local, missingId, malformed, tracks.size,
+            spotifyId,
+            range.spotifyValue,
+            items.size,
+            TOP_TRACKS_LIMIT,
+            local,
+            missingId,
+            malformed,
+            tracks.size,
         )
         return tracks
     }
 
     /** Creates a private playlist owned by [ownerId]. */
-    fun createPlaylist(ownerId: String, name: String, description: String): CreatedPlaylist {
-        val request = json.encodeToString(
-            CreatePlaylistRequest.serializer(),
-            CreatePlaylistRequest(name, description, isPublic = false),
-        )
-        val body = rest.post()
-            .uri("/me/playlists")
-            .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(request)
-            .retrieve()
-            .body(String::class.java)
-            ?: error("Spotify returned an empty response when creating a playlist")
+    fun createPlaylist(
+        ownerId: String,
+        name: String,
+        description: String,
+    ): CreatedPlaylist {
+        val request =
+            json.encodeToString(
+                CreatePlaylistRequest.serializer(),
+                CreatePlaylistRequest(name, description, isPublic = false),
+            )
+        val body =
+            rest
+                .post()
+                .uri("/me/playlists")
+                .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(String::class.java)
+                ?: error("Spotify returned an empty response when creating a playlist")
 
         val playlist = json.decodeFromString(PlaylistDto.serializer(), body)
         check(SpotifyIds.isPlaylistId(playlist.id)) { "Spotify returned a malformed playlist ID" }
@@ -92,13 +120,20 @@ class SpotifyClient(
         return CreatedPlaylist(playlist.id, url)
     }
 
-    private fun isValidTrack(id: String, uri: String): Boolean = SpotifyIds.isTrackId(id) && uri == "spotify:track:$id"
+    private fun isValidTrack(
+        id: String,
+        uri: String,
+    ): Boolean = SpotifyIds.isTrackId(id) && uri == "spotify:track:$id"
 
     /**
      * Replaces the whole playlist contents. Spotify takes at most 100 items per request, so the first
      * batch replaces and any further batches are appended in order.
      */
-    fun replaceItems(ownerId: String, playlistId: String, uris: List<String>) {
+    fun replaceItems(
+        ownerId: String,
+        playlistId: String,
+        uris: List<String>,
+    ) {
         val batches = uris.chunked(MAX_ITEMS_PER_REQUEST).ifEmpty { listOf(emptyList()) }
         batches.forEachIndexed { index, batch ->
             val body = json.encodeToString(ReplaceItemsRequest.serializer(), ReplaceItemsRequest(batch))
@@ -118,8 +153,12 @@ class SpotifyClient(
      * Spotify keeps deleted playlists recoverable
      * for a while at spotify.com/account/recover-playlists.
      */
-    fun removePlaylistFromLibrary(ownerId: String, playlistId: String) {
-        rest.delete()
+    fun removePlaylistFromLibrary(
+        ownerId: String,
+        playlistId: String,
+    ) {
+        rest
+            .delete()
             .uri("/me/library?uris={uri}", "spotify:playlist:$playlistId")
             .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
             .retrieve()

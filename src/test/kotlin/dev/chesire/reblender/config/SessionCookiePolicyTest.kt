@@ -5,7 +5,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SessionCookiePolicyTest {
-
     @Test
     fun `secure follows the base url scheme by default`() {
         assertTrue(SessionCookiePolicy.secure(null, "https://reblender.example.com"))

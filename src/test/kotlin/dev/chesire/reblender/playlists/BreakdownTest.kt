@@ -12,24 +12,26 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BreakdownTest {
-
-    private val blend = Blend(
-        playlistId = "p1",
-        playlistName = "A & B - Recent favourites",
-        playlistUrl = "https://open.spotify.com/playlist/p1",
-        ownerId = "a",
-        memberIds = listOf("a", "b"),
-        timeRange = TimeRange.RECENT,
-        size = 4,
-        sharedMode = SharedMode.CAPPED,
-        trackCount = 4,
-        createdAt = Instant.EPOCH,
-        updatedAt = Instant.EPOCH,
-    )
+    private val blend =
+        Blend(
+            playlistId = "p1",
+            playlistName = "A & B - Recent favourites",
+            playlistUrl = "https://open.spotify.com/playlist/p1",
+            ownerId = "a",
+            memberIds = listOf("a", "b"),
+            timeRange = TimeRange.RECENT,
+            size = 4,
+            sharedMode = SharedMode.CAPPED,
+            trackCount = 4,
+            createdAt = Instant.EPOCH,
+            updatedAt = Instant.EPOCH,
+        )
     private val users = listOf(AppUser("a", "Alice Smith", "https://img/a"), AppUser("b", "Bob"))
 
-    private fun track(id: String, vararg contributors: String) =
-        BlendTrack(id, "spotify:track:$id", "Song $id", listOf("Artist $id", "Feat"), contributors.toList())
+    private fun track(
+        id: String,
+        vararg contributors: String,
+    ) = BlendTrack(id, "spotify:track:$id", "Song $id", listOf("Artist $id", "Feat"), contributors.toList())
 
     private val tracks = listOf(track("s1", "b", "a"), track("a1", "a"), track("b1", "b"), track("a2", "a"))
 
@@ -53,7 +55,13 @@ class BreakdownTest {
         assertTrue(breakdown.members[0].isOwner)
         assertFalse(breakdown.members[1].isOwner)
         assertEquals("https://img/a", breakdown.members[0].avatarUrl)
-        assertEquals(2, breakdown.members.map { it.colour }.toSet().size)
+        assertEquals(
+            2,
+            breakdown.members
+                .map { it.colour }
+                .toSet()
+                .size,
+        )
     }
 
     @Test
@@ -68,7 +76,14 @@ class BreakdownTest {
     @Test
     fun `unknown contributors are shown as former members`() {
         val breakdown = Breakdown.of(blend, users, listOf(track("x", "a", "gone")))
-        assertEquals("Former member", breakdown.tracks.single().contributors.last().name)
+        assertEquals(
+            "Former member",
+            breakdown.tracks
+                .single()
+                .contributors
+                .last()
+                .name,
+        )
     }
 
     @Test

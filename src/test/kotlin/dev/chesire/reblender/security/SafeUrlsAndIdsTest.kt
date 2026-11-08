@@ -7,7 +7,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SafeUrlsAndIdsTest {
-
     @Test
     fun `https urls pass through`() {
         assertEquals("https://i.scdn.co/image/ab67616d", SafeUrls.httpsOrNull("https://i.scdn.co/image/ab67616d"))

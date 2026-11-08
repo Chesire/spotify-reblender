@@ -7,7 +7,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class LogRedactionTest {
-
     @Test
     fun `oauth callback parameters are masked`() {
         assertEquals(

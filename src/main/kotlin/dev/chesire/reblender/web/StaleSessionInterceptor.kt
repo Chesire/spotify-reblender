@@ -26,7 +26,11 @@ class StaleSessionInterceptor(
 ) : HandlerInterceptor {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
+    override fun preHandle(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        handler: Any,
+    ): Boolean {
         val auth = SecurityContextHolder.getContext().authentication as? OAuth2AuthenticationToken ?: return true
         val name = auth.name
         if (users.findById(name) != null && hasStoredLogin(auth.authorizedClientRegistrationId, name)) return true
@@ -37,18 +41,23 @@ class StaleSessionInterceptor(
         return false
     }
 
-    private fun hasStoredLogin(registrationId: String, principalName: String): Boolean =
-        jdbc.sql(
-            "SELECT COUNT(*) FROM oauth2_authorized_client WHERE client_registration_id = :reg AND principal_name = :name",
-        )
-            .param("reg", registrationId)
+    private fun hasStoredLogin(
+        registrationId: String,
+        principalName: String,
+    ): Boolean =
+        jdbc
+            .sql(
+                "SELECT COUNT(*) FROM oauth2_authorized_client WHERE client_registration_id = :reg AND principal_name = :name",
+            ).param("reg", registrationId)
             .param("name", principalName)
             .query(Long::class.javaObjectType)
             .single() > 0
 }
 
 @Configuration
-class StaleSessionWebConfig(private val interceptor: StaleSessionInterceptor) : WebMvcConfigurer {
+class StaleSessionWebConfig(
+    private val interceptor: StaleSessionInterceptor,
+) : WebMvcConfigurer {
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(interceptor).excludePathPatterns("/css/**", "/js/**", "/error")
     }

@@ -55,39 +55,46 @@ data class Breakdown(
         /** Colours that read well on the dark background and are easy to tell apart. */
         val PALETTE = listOf("#1db954", "#4f9cf9", "#e3a008", "#e5534b", "#b07cf7")
 
-        fun of(blend: Blend, users: List<AppUser>, tracks: List<BlendTrack>): Breakdown {
+        fun of(
+            blend: Blend,
+            users: List<AppUser>,
+            tracks: List<BlendTrack>,
+        ): Breakdown {
             val usersById = users.associateBy { it.spotifyId }
-            val baseMembers = blend.memberIds.mapIndexed { index, id ->
-                val user = usersById[id]
-                val name = user?.displayName ?: id
-                MemberView(
-                    id = id,
-                    name = name,
-                    avatarUrl = user?.avatarUrl,
-                    initials = initials(name),
-                    colour = PALETTE[index % PALETTE.size],
-                    isOwner = id == blend.ownerId,
-                    ownCount = tracks.count { it.contributors == listOf(id) },
-                    sharedCount = tracks.count { it.contributors.size > 1 && id in it.contributors },
-                )
-            }
+            val baseMembers =
+                blend.memberIds.mapIndexed { index, id ->
+                    val user = usersById[id]
+                    val name = user?.displayName ?: id
+                    MemberView(
+                        id = id,
+                        name = name,
+                        avatarUrl = user?.avatarUrl,
+                        initials = initials(name),
+                        colour = PALETTE[index % PALETTE.size],
+                        isOwner = id == blend.ownerId,
+                        ownCount = tracks.count { it.contributors == listOf(id) },
+                        sharedCount = tracks.count { it.contributors.size > 1 && id in it.contributors },
+                    )
+                }
             val membersById = baseMembers.associateBy { it.id }
             val unknown = { id: String ->
                 MemberView(id, "Former member", null, "?", "#6b6b6b", false, 0, 0)
             }
-            val trackViews = tracks.mapIndexed { index, track ->
-                TrackView(
-                    position = index + 1,
-                    trackId = track.trackId,
-                    name = track.name,
-                    artists = track.artists.joinToString(", "),
-                    imageUrl = track.imageUrl,
-                    // Show contributors in member order so stacks look consistent.
-                    contributors = track.contributors
-                        .map { membersById[it] ?: unknown(it) }
-                        .sortedBy { member -> blend.memberIds.indexOf(member.id).let { if (it < 0) Int.MAX_VALUE else it } },
-                )
-            }
+            val trackViews =
+                tracks.mapIndexed { index, track ->
+                    TrackView(
+                        position = index + 1,
+                        trackId = track.trackId,
+                        name = track.name,
+                        artists = track.artists.joinToString(", "),
+                        imageUrl = track.imageUrl,
+                        // Show contributors in member order so stacks look consistent.
+                        contributors =
+                            track.contributors
+                                .map { membersById[it] ?: unknown(it) }
+                                .sortedBy { member -> blend.memberIds.indexOf(member.id).let { if (it < 0) Int.MAX_VALUE else it } },
+                    )
+                }
             return Breakdown(blend, baseMembers, trackViews)
         }
 

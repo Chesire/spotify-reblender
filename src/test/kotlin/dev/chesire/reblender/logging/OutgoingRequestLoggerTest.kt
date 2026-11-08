@@ -3,6 +3,11 @@ package dev.chesire.reblender.logging
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.mock.http.client.MockClientHttpRequest
+import org.springframework.mock.http.client.MockClientHttpResponse
 import java.net.URI
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -10,14 +15,8 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import org.slf4j.LoggerFactory
-import org.springframework.http.HttpMethod
-import org.springframework.http.HttpStatus
-import org.springframework.mock.http.client.MockClientHttpRequest
-import org.springframework.mock.http.client.MockClientHttpResponse
 
 class OutgoingRequestLoggerTest {
-
     private val logger = LoggerFactory.getLogger("reblender.http.out") as Logger
     private val appender = ListAppender<ILoggingEvent>()
 
@@ -34,13 +33,16 @@ class OutgoingRequestLoggerTest {
 
     private fun logged() = appender.list.joinToString("\n") { it.formattedMessage }
 
-    private fun call(uri: String, response: MockClientHttpResponse, body: String = "") =
-        OutgoingRequestLogger().intercept(
-            MockClientHttpRequest(HttpMethod.POST, URI(uri)).apply {
-                headers.setBearerAuth("BQDaccesstoken")
-            },
-            body.toByteArray(),
-        ) { _, _ -> response }
+    private fun call(
+        uri: String,
+        response: MockClientHttpResponse,
+        body: String = "",
+    ) = OutgoingRequestLogger().intercept(
+        MockClientHttpRequest(HttpMethod.POST, URI(uri)).apply {
+            headers.setBearerAuth("BQDaccesstoken")
+        },
+        body.toByteArray(),
+    ) { _, _ -> response }
 
     @Test
     fun `success logs method, url and status but no headers or bodies`() {
@@ -55,7 +57,11 @@ class OutgoingRequestLoggerTest {
     @Test
     fun `errors log a masked body and the caller can still read it`() {
         val error = """{"error":{"status":403,"message":"Insufficient client scope"},"access_token":"BQDleak"}"""
-        val result = call("https://api.spotify.com/v1/me/library?uris=spotify:playlist:x", MockClientHttpResponse(error.toByteArray(), HttpStatus.FORBIDDEN))
+        val result =
+            call(
+                "https://api.spotify.com/v1/me/library?uris=spotify:playlist:x",
+                MockClientHttpResponse(error.toByteArray(), HttpStatus.FORBIDDEN),
+            )
 
         val text = logged()
         assertContains(text, "-> 403")

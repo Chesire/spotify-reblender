@@ -12,8 +12,6 @@ import dev.chesire.reblender.users.AccountService
 import dev.chesire.reblender.users.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -27,6 +25,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.client.RestClientResponseException
 import org.springframework.web.servlet.mvc.support.RedirectAttributes
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Controller
 class HomeController(
@@ -57,14 +57,17 @@ class HomeController(
         model.addAttribute("partners", allUsers.filter { it.spotifyId != me && it.allowBlending })
         model.addAttribute("allowBlending", allUsers.firstOrNull { it.spotifyId == me }?.allowBlending ?: true)
         model.addAttribute("maxPartners", BlendEngine.MAX_PARTICIPANTS - 1)
-        model.addAttribute("playlists", playlists.playlistsFor(me).map { blend ->
-            val others = blend.memberIds.drop(1).map { names[it] ?: it }
-            PlaylistRow(
-                blend = blend,
-                withLabel = if (others.isEmpty()) "just you" else "with " + PlaylistService.joinNames(others, "and"),
-                updatedLabel = UPDATED_FORMAT.format(blend.updatedAt),
-            )
-        })
+        model.addAttribute(
+            "playlists",
+            playlists.playlistsFor(me).map { blend ->
+                val others = blend.memberIds.drop(1).map { names[it] ?: it }
+                PlaylistRow(
+                    blend = blend,
+                    withLabel = if (others.isEmpty()) "just you" else "with " + PlaylistService.joinNames(others, "and"),
+                    updatedLabel = UPDATED_FORMAT.format(blend.updatedAt),
+                )
+            },
+        )
         model.addAttribute("timeRanges", TimeRange.entries)
         model.addAttribute("sharedModes", SharedMode.entries)
         model.addAttribute("defaultSize", DEFAULT_SIZE)
@@ -135,10 +138,18 @@ class HomeController(
             val outcome = playlists.delete(principal.name, playlistId, removeFromSpotify)
             val name = "\"${outcome.playlistName}\""
             when {
-                !removeFromSpotify -> "Stopped managing $name. It's still in your Spotify library."
-                outcome.removedFromSpotify -> "Deleted $name from the app and your Spotify library."
-                else -> "Removed $name from the app, but Spotify wouldn't let the app delete it " +
-                    "(error ${outcome.spotifyStatus}). Delete it in Spotify yourself."
+                !removeFromSpotify -> {
+                    "Stopped managing $name. It's still in your Spotify library."
+                }
+
+                outcome.removedFromSpotify -> {
+                    "Deleted $name from the app and your Spotify library."
+                }
+
+                else -> {
+                    "Removed $name from the app, but Spotify wouldn't let the app delete it " +
+                        "(error ${outcome.spotifyStatus}). Delete it in Spotify yourself."
+                }
             }
         }
         return "redirect:/"
@@ -181,50 +192,67 @@ class HomeController(
     private fun shortNote(outcome: BlendOutcome): String {
         val blend = outcome.blend
         if (blend.trackCount >= blend.size) return ""
-        val counts = outcome.usableTracks.entries.joinToString(", ") { (id, count) ->
-            "${users.findById(id)?.displayName ?: id}: $count"
-        }
-        val why = if (blend.memberIds.size == 1) {
-            "Spotify only had that many usable top tracks for you"
-        } else {
-            "not enough usable top tracks to fill an even split"
-        }
+        val counts =
+            outcome.usableTracks.entries.joinToString(", ") { (id, count) ->
+                "${users.findById(id)?.displayName ?: id}: $count"
+            }
+        val why =
+            if (blend.memberIds.size == 1) {
+                "Spotify only had that many usable top tracks for you"
+            } else {
+                "not enough usable top tracks to fill an even split"
+            }
         return " That's fewer than the ${blend.size} you asked for: $why (usable top tracks: $counts)."
     }
 
     /** Playlist IDs from the URL must look like Spotify IDs before they reach the database, Spotify or a redirect. */
-    private fun validPlaylistId(playlistId: String, redirect: RedirectAttributes): Boolean {
+    private fun validPlaylistId(
+        playlistId: String,
+        redirect: RedirectAttributes,
+    ): Boolean {
         if (SpotifyIds.isPlaylistId(playlistId)) return true
         redirect.addFlashAttribute("error", "That isn't a valid playlist.")
         return false
     }
 
-    private fun handle(me: String, redirect: RedirectAttributes, action: () -> String) {
+    private fun handle(
+        me: String,
+        redirect: RedirectAttributes,
+        action: () -> String,
+    ) {
         try {
             redirect.addFlashAttribute("message", action())
         } catch (e: ReloginRequiredException) {
-            val text = if (e.spotifyId == me) {
-                "Your Spotify login has expired. Log out and log in again."
-            } else {
-                val who = users.findById(e.spotifyId)?.displayName ?: e.spotifyId
-                "$who needs to log in to the app again (Spotify logins expire after 6 months)."
-            }
+            val text =
+                if (e.spotifyId == me) {
+                    "Your Spotify login has expired. Log out and log in again."
+                } else {
+                    val who = users.findById(e.spotifyId)?.displayName ?: e.spotifyId
+                    "$who needs to log in to the app again (Spotify logins expire after 6 months)."
+                }
             redirect.addFlashAttribute("error", text)
         } catch (e: RestClientResponseException) {
             log.warn("Spotify API error {}: {}", e.statusCode, e.responseBodyAsString)
-            val text = when (e.statusCode.value()) {
-                403 -> "Spotify refused the request (403). Check everyone in the blend is on the app's allowlist in the Spotify dashboard."
-                404 -> "Spotify couldn't find that playlist. It may have been deleted."
-                429 -> "Spotify is rate limiting the app. Try again in a minute."
-                else -> "Spotify returned an error (${e.statusCode.value()})."
-            }
+            val text =
+                when (e.statusCode.value()) {
+                    403 ->
+                        "Spotify refused the request (403). " +
+                            "Check everyone in the blend is on the app's allowlist in the Spotify dashboard."
+                    404 -> "Spotify couldn't find that playlist. It may have been deleted."
+                    429 -> "Spotify is rate limiting the app. Try again in a minute."
+                    else -> "Spotify returned an error (${e.statusCode.value()})."
+                }
             redirect.addFlashAttribute("error", text)
         } catch (e: IllegalArgumentException) {
             redirect.addFlashAttribute("error", e.message ?: "Invalid request.")
         }
     }
 
-    data class PlaylistRow(val blend: Blend, val withLabel: String, val updatedLabel: String)
+    data class PlaylistRow(
+        val blend: Blend,
+        val withLabel: String,
+        val updatedLabel: String,
+    )
 
     companion object {
         const val DEFAULT_SIZE = 40
@@ -232,4 +260,3 @@ class HomeController(
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
     }
 }
-

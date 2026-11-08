@@ -12,7 +12,6 @@ class AccountService(
     private val users: UserRepository,
     private val blends: BlendRepository,
 ) {
-
     /** Deletes the user's stored Spotify tokens, their user record and every blend they're part of. */
     @Transactional
     fun forget(spotifyId: String) {

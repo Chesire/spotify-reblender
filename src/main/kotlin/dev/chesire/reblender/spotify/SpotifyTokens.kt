@@ -7,27 +7,30 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.stereotype.Component
 
 /** Thrown when a user has no usable token (never logged in, revoked, or the 6-month refresh token expired). */
-class ReloginRequiredException(val spotifyId: String) :
-    RuntimeException("Spotify user $spotifyId needs to log in again")
+class ReloginRequiredException(
+    val spotifyId: String,
+) : RuntimeException("Spotify user $spotifyId needs to log in again")
 
 @Component
 class SpotifyTokens(
     private val clientManager: OAuth2AuthorizedClientManager,
 ) {
-
     /** A valid access token for [spotifyId], refreshed if needed. */
     fun accessTokenFor(spotifyId: String): String {
-        val request = OAuth2AuthorizeRequest.withClientRegistrationId(REGISTRATION_ID)
-            .principal(spotifyId)
-            .build()
-        val client = try {
-            clientManager.authorize(request)
-        } catch (e: ClientAuthorizationException) {
-            // e.g. invalid_grant: the refresh token has expired. The stored client is removed by Spring.
-            // Only the OAuth error code is logged; the exception never carries token values.
-            LoggerFactory.getLogger(javaClass).warn("Token refresh for {} failed: {}", spotifyId, e.error.errorCode)
-            throw ReloginRequiredException(spotifyId)
-        }
+        val request =
+            OAuth2AuthorizeRequest
+                .withClientRegistrationId(REGISTRATION_ID)
+                .principal(spotifyId)
+                .build()
+        val client =
+            try {
+                clientManager.authorize(request)
+            } catch (e: ClientAuthorizationException) {
+                // e.g. invalid_grant: the refresh token has expired. The stored client is removed by Spring.
+                // Only the OAuth error code is logged; the exception never carries token values.
+                LoggerFactory.getLogger(javaClass).warn("Token refresh for {} failed: {}", spotifyId, e.error.errorCode)
+                throw ReloginRequiredException(spotifyId)
+            }
         return client?.accessToken?.tokenValue ?: throw ReloginRequiredException(spotifyId)
     }
 

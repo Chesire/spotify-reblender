@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class SpotifyImagesTest {
-
     private fun url(name: String) = "https://i.scdn.co/image/$name"
 
     @Test

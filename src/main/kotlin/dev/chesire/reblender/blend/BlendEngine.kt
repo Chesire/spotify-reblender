@@ -25,7 +25,6 @@ import kotlin.math.floor
  * Pure and deterministic: same inputs always give the same playlist.
  */
 object BlendEngine {
-
     const val MAX_PARTICIPANTS = 5
 
     /** Spotify returns at most 50 top tracks per person, so a playlist can hold at most 50 per person. */
@@ -35,15 +34,20 @@ object BlendEngine {
     fun sizeRange(participantCount: Int): IntRange = participantCount..participantCount * TRACKS_PER_PERSON
 
     /** Target fraction of the playlist that shared songs may take, by group size. */
-    fun sharedShare(participantCount: Int): Double = when (participantCount) {
-        1 -> 0.0
-        2 -> 1.0 / 3
-        3 -> 1.0 / 2
-        4 -> 2.0 / 3
-        else -> 4.0 / 5
-    }
+    fun sharedShare(participantCount: Int): Double =
+        when (participantCount) {
+            1 -> 0.0
+            2 -> 1.0 / 3
+            3 -> 1.0 / 2
+            4 -> 2.0 / 3
+            else -> 4.0 / 5
+        }
 
-    fun blend(participants: List<Participant>, size: Int, sharedMode: SharedMode): List<BlendedTrack> {
+    fun blend(
+        participants: List<Participant>,
+        size: Int,
+        sharedMode: SharedMode,
+    ): List<BlendedTrack> {
         require(participants.size in 1..MAX_PARTICIPANTS) { "A blend needs 1 to $MAX_PARTICIPANTS people" }
         val allowed = sizeRange(participants.size)
         require(size in allowed) {
@@ -66,20 +70,22 @@ object BlendEngine {
         }
 
         // Step 1.
-        val shared = holders.filterValues { it.size >= 2 }.keys.sortedWith(
-            compareByDescending<String> { holders.getValue(it).size }
-                .thenBy { holders.getValue(it).map { (_, rank) -> rank }.average() }
-                .thenBy { holders.getValue(it).minOf { (_, rank) -> rank } }
-                .thenBy { it },
-        )
+        val shared =
+            holders.filterValues { it.size >= 2 }.keys.sortedWith(
+                compareByDescending<String> { holders.getValue(it).size }
+                    .thenBy { holders.getValue(it).map { (_, rank) -> rank }.average() }
+                    .thenBy { holders.getValue(it).minOf { (_, rank) -> rank } }
+                    .thenBy { it },
+            )
         val solo = people.map { person -> person.tracks.filter { holders.getValue(it.id).size == 1 } }
 
         // Steps 2 and 3.
-        val budget = when {
-            n == 1 -> 0
-            sharedMode == SharedMode.FILL -> size
-            else -> floor(size * sharedShare(n)).toInt()
-        }
+        val budget =
+            when {
+                n == 1 -> 0
+                sharedMode == SharedMode.FILL -> size
+                else -> floor(size * sharedShare(n)).toInt()
+            }
         var sharedCount = minOf(shared.size, budget)
         var remaining = size - sharedCount
         val uneven = remaining % n
@@ -106,12 +112,14 @@ object BlendEngine {
         if (deficit > 0) sharedCount = minOf(shared.size, sharedCount + deficit)
 
         // Step 5.
-        val sharedPicks = shared.take(sharedCount).map { id ->
-            BlendedTrack(trackById.getValue(id), holders.getValue(id).mapTo(LinkedHashSet()) { people[it.first].id })
-        }
-        val soloPicks = people.mapIndexed { i, person ->
-            solo[i].take(take[i]).map { BlendedTrack(it, setOf(person.id)) }
-        }
+        val sharedPicks =
+            shared.take(sharedCount).map { id ->
+                BlendedTrack(trackById.getValue(id), holders.getValue(id).mapTo(LinkedHashSet()) { people[it.first].id })
+            }
+        val soloPicks =
+            people.mapIndexed { i, person ->
+                solo[i].take(take[i]).map { BlendedTrack(it, setOf(person.id)) }
+            }
         return interleave(listOf(sharedPicks) + soloPicks)
     }
 

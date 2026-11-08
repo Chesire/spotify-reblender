@@ -13,7 +13,6 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 class LoginSuccessHandler(
     private val users: UserRepository,
 ) : SimpleUrlAuthenticationSuccessHandler("/") {
-
     init {
         setAlwaysUseDefaultTargetUrl(true)
     }
