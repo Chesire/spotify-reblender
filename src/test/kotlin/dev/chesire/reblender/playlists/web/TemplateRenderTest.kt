@@ -23,8 +23,7 @@ import kotlin.test.assertFalse
  * and writes the HTML to build/previews/ so CI can show what the pages look like.
  */
 class TemplateRenderTest {
-    private val engine =
-        SpringTemplateEngine().apply {
+    private val engine = SpringTemplateEngine().apply {
             setTemplateResolver(
                 ClassLoaderTemplateResolver().apply {
                     prefix = "templates/"
@@ -45,8 +44,7 @@ class TemplateRenderTest {
             )
         }
 
-    private val blend =
-        Blend(
+    private val blend = Blend(
             playlistId = "p1",
             playlistName = "Chesire, Sam & Alex Morgan - Half-year favourites",
             playlistUrl = "https://open.spotify.com/playlist/p1",
@@ -59,8 +57,7 @@ class TemplateRenderTest {
             createdAt = Instant.EPOCH,
             updatedAt = Instant.EPOCH,
         )
-    private val users =
-        listOf(
+    private val users = listOf(
             AppUser("chesire", "Chesire", SAMPLE_AVATAR),
             AppUser("sam", "Sam"),
             AppUser("alex", "Alex Morgan"),
@@ -84,8 +81,7 @@ class TemplateRenderTest {
             "<rect x='0' y='44' width='64' height='20' fill='%23000' fill-opacity='0.25'/></svg>"
     }
 
-    private val tracks =
-        listOf(
+    private val tracks = listOf(
             track(1, "Midnight Static", "The Lanterns", "chesire", "sam", "alex"),
             track(2, "Paper Boats", "Juniper Coast", "chesire"),
             track(3, "Low Orbit", "Ana Reyes", "sam"),
@@ -129,8 +125,7 @@ class TemplateRenderTest {
     @Test
     fun `home page links playlist names to the breakdown`() {
         val row = PlaylistRow(blend, "with Sam and Alex Morgan", "2026-11-07 18:30")
-        val html =
-            render(
+        val html = render(
                 "index",
                 mapOf(
                     "loggedIn" to true,
@@ -185,8 +180,7 @@ class TemplateRenderTest {
         val dir = File("build/previews").apply { mkdirs() }
         val css = File("src/main/resources/static/css/app.css").readText()
         val js = File("src/main/resources/static/js/app.js").readText()
-        val standalone =
-            html
+        val standalone = html
                 .replace("<link rel=\"stylesheet\" href=\"/css/app.css\">", "<style>\n$css\n</style>")
                 .replace("<script src=\"/js/app.js\"></script>", "<script>\n$js\n</script>")
         File(dir, "$name.html").writeText(standalone)
@@ -195,8 +189,7 @@ class TemplateRenderTest {
 
     private companion object {
         /** A tiny inline image so the preview shows a "real" profile picture without network access. */
-        const val SAMPLE_AVATAR =
-            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>" +
+        const val SAMPLE_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>" +
                 "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f6d365'/>" +
                 "<stop offset='1' stop-color='%23fda085'/></linearGradient></defs><rect width='64' height='64' fill='url(%23g)'/>" +
                 "<circle cx='32' cy='26' r='12' fill='%23fff8'/><rect x='14' y='42' width='36' height='22' rx='11' fill='%23fff8'/></svg>"

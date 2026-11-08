@@ -26,7 +26,7 @@ Inputs: everyone's top 50 tracks for the chosen range, a size N, and a shared-so
    *Let shared songs fill it* lets shared songs take every slot. Either way, only songs that really are shared count; if there aren't enough, more slots go to individual picks.
 3. The rest is split **evenly** between everyone, using songs only they have, in rank order.
 4. **Uneven slots** (e.g. 7 left for 2 people): they go to more shared songs if any are left; otherwise the playlist is slightly shorter so the split stays even.
-5. If someone runs out of their own tracks, the others fill their slots. If everyone runs out, leftover shared songs fill in.
+5. Everyone gets the **same number** of their own songs. If someone has fewer than their share, everyone is capped at that number; spare shared songs fill the freed slots, otherwise the playlist is shorter.
 6. Songs are **interleaved** (e.g. `S A B S A B …`) so nobody gets a long run.
 
 Time ranges are Spotify's three windows: **Recent** = `short_term` (~4 weeks), **Half-year** = `medium_term` (~6 months), **All-time** = `long_term` (~1 year; Spotify has no true all-time). A short window can have fewer than 50 top tracks if you haven't listened to many different songs; the success message says when that shortened a playlist.

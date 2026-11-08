@@ -23,8 +23,7 @@ data class PlaylistResponse(
     val updatedAt: Instant,
 ) {
     companion object {
-        fun of(blend: Blend) =
-            PlaylistResponse(
+        fun of(blend: Blend) = PlaylistResponse(
                 id = blend.playlistId,
                 name = blend.playlistName,
                 url = blend.playlistUrl,
@@ -56,12 +55,10 @@ data class PlaylistDetailsResponse(
     val tracks: List<TrackResponse>,
 ) {
     companion object {
-        fun of(details: BlendDetails) =
-            PlaylistDetailsResponse(
+        fun of(details: BlendDetails) = PlaylistDetailsResponse(
                 playlist = PlaylistResponse.of(details.blend),
                 members = details.members.map { MemberResponse(it.spotifyId, it.displayName, it.avatarUrl) },
-                tracks =
-                    details.tracks.map {
+                tracks = details.tracks.map {
                         TrackResponse(it.trackId, it.uri, it.name, it.artists, it.contributors, it.imageUrl)
                     },
             )

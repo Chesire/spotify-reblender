@@ -57,8 +57,7 @@ class OutgoingRequestLoggerTest {
     @Test
     fun `errors log a masked body and the caller can still read it`() {
         val error = """{"error":{"status":403,"message":"Insufficient client scope"},"access_token":"BQDleak"}"""
-        val result =
-            call(
+        val result = call(
                 "https://api.spotify.com/v1/me/library?uris=spotify:playlist:x",
                 MockClientHttpResponse(error.toByteArray(), HttpStatus.FORBIDDEN),
             )

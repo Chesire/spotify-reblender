@@ -30,8 +30,7 @@ class TokenCipher(
         require(base64Key.isNotBlank()) {
             "TOKEN_ENCRYPTION_KEY (or TOKEN_ENCRYPTION_KEY_FILE) is not set. Generate a key with: openssl rand -base64 32"
         }
-        val bytes =
-            try {
+        val bytes = try {
                 Base64.getDecoder().decode(base64Key.trim())
             } catch (e: IllegalArgumentException) {
                 throw IllegalArgumentException("TOKEN_ENCRYPTION_KEY must be base64 (openssl rand -base64 32)", e)
@@ -47,8 +46,7 @@ class TokenCipher(
         associatedData: ByteArray,
     ): ByteArray {
         val iv = ByteArray(IV_BYTES).also(random::nextBytes)
-        val cipher =
-            Cipher.getInstance(TRANSFORMATION).apply {
+        val cipher = Cipher.getInstance(TRANSFORMATION).apply {
                 init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
                 updateAAD(associatedData)
             }

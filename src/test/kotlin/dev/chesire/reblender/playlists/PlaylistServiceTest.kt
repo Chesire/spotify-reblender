@@ -42,8 +42,7 @@ class PlaylistServiceTest {
         `when`(accounts.find("friend")).thenReturn(AppUser("friend", "Friend"))
     }
 
-    private fun stored(vararg memberIds: String): BlendEntity =
-        Blend(
+    private fun stored(vararg memberIds: String): BlendEntity = Blend(
             playlistId = playlistId,
             playlistName = "A playlist",
             playlistUrl = "https://open.spotify.com/playlist/$playlistId",
@@ -62,8 +61,7 @@ class PlaylistServiceTest {
 
     @Test
     fun `cannot create a blend with someone who opted out`() {
-        val error =
-            assertFailsWith<IllegalArgumentException> {
+        val error = assertFailsWith<IllegalArgumentException> {
                 service.create("owner", listOf("quiet"), TimeRange.RECENT, 10, SharedMode.CAPPED)
             }
         assertContains(error.message.orEmpty(), "Quiet Person")
@@ -92,8 +90,7 @@ class PlaylistServiceTest {
         val outcome = service.create("owner", listOf("friend"), TimeRange.RECENT, 10, SharedMode.CAPPED)
 
         assertEquals(listOf("owner", "friend"), outcome.blend.memberIds)
-        val saved =
-            mockingDetails(blends)
+        val saved = mockingDetails(blends)
                 .invocations
                 .single { it.method.name == "insert" }
                 .arguments

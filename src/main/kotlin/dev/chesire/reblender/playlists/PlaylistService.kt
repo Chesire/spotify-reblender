@@ -73,8 +73,7 @@ class PlaylistService(
         spotify.replaceItems(ownerId, playlist.id, blended.map { it.track.uri })
 
         val now = Instant.now()
-        val blend =
-            Blend(
+        val blend = Blend(
                 playlistId = playlist.id,
                 playlistName = name,
                 playlistUrl = playlist.url,
@@ -157,8 +156,7 @@ class PlaylistService(
         require(ownerId !in partners) { "You're always in your own blend; pick other people." }
 
         val owner = accounts.find(ownerId) ?: throw IllegalArgumentException("Unknown user. Log out and in again.")
-        val others =
-            partners.map { id ->
+        val others = partners.map { id ->
                 accounts.find(id) ?: throw IllegalArgumentException("Someone you picked hasn't logged in yet.")
             }
         // Enforced here, not just by hiding people in the form: a crafted request can't include someone who opted out.
@@ -177,8 +175,7 @@ class PlaylistService(
             ?: throw IllegalArgumentException("That playlist isn't one of yours.")
     }
 
-    private fun toStored(track: BlendedTrack) =
-        BlendTrack(
+    private fun toStored(track: BlendedTrack) = BlendTrack(
             trackId = track.track.id,
             uri = track.track.uri,
             name = track.track.name,
@@ -194,8 +191,7 @@ class PlaylistService(
         sharedMode: SharedMode,
     ): Pair<List<BlendedTrack>, Map<String, Int>> {
         // Others first: if someone's login has expired we fail before touching the owner's playlist.
-        val tracksById =
-            (memberIds.drop(1) + memberIds.first())
+        val tracksById = (memberIds.drop(1) + memberIds.first())
                 .associateWith { spotify.topTracks(it, timeRange) }
         val participants = memberIds.map { Participant(it, tracksById.getValue(it)) }
         val blended = BlendEngine.blend(participants, size, sharedMode)

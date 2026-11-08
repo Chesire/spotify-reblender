@@ -19,8 +19,7 @@ object SpotifyProfile {
      * Pick the smallest image that is at least 64px (it's shown small), else whatever exists.
      */
     internal fun avatarUrl(images: Any?): String? {
-        val candidates =
-            (images as? List<*>)
+        val candidates = (images as? List<*>)
                 .orEmpty()
                 .mapNotNull { it as? Map<*, *> }
                 .mapNotNull { image ->

@@ -110,11 +110,30 @@ class BlendEngineTest {
     }
 
     @Test
-    fun `when one person is short the other fills the gap`() {
+    fun `when one person is short everyone is capped at their count`() {
         val result = blend2(tracks("a", 3), tracks("b", 50), 20)
-        assertEquals(20, result.size)
+        assertEquals(6, result.size)
         assertEquals(3, result.soloOf("a"))
-        assertEquals(17, result.soloOf("b"))
+        assertEquals(3, result.soloOf("b"))
+    }
+
+    @Test
+    fun `when one person is short spare shared songs fill the freed slots`() {
+        val shared = tracks("s", 20)
+        val result = blend2(shared + tracks("a", 3), shared + tracks("b", 50), 21)
+        // Budget 7 shared; 14 left -> 7 each, capped at a's 3; the 8 freed slots go to spare shared songs.
+        assertEquals(21, result.size)
+        assertEquals(15, result.shared())
+        assertEquals(3, result.soloOf("a"))
+        assertEquals(3, result.soloOf("b"))
+    }
+
+    @Test
+    fun `shared budget uses exact fractions`() {
+        assertEquals(1, BlendEngine.sharedBudget(2, 3))
+        assertEquals(16, BlendEngine.sharedBudget(2, 50))
+        assertEquals(20, BlendEngine.sharedBudget(5, 25))
+        assertEquals(0, BlendEngine.sharedBudget(1, 50))
     }
 
     @Test
@@ -165,18 +184,17 @@ class BlendEngineTest {
 
     @Test
     fun `shared budget grows with group size`() {
-        assertEquals(1.0 / 3, BlendEngine.sharedShare(2))
-        assertEquals(0.5, BlendEngine.sharedShare(3))
-        assertEquals(2.0 / 3, BlendEngine.sharedShare(4))
-        assertEquals(0.8, BlendEngine.sharedShare(5))
+        assertEquals(1 to 3, BlendEngine.sharedShare(2))
+        assertEquals(1 to 2, BlendEngine.sharedShare(3))
+        assertEquals(2 to 3, BlendEngine.sharedShare(4))
+        assertEquals(4 to 5, BlendEngine.sharedShare(5))
     }
 
     @Test
     fun `three people prefer songs shared by everyone, then by fewer`() {
         val all3 = tracks("t", 6)
         val ab = tracks("ab", 20)
-        val people =
-            listOf(
+        val people = listOf(
                 p("a", all3 + ab + tracks("a", 30)),
                 p("b", all3 + ab + tracks("b", 30)),
                 p("c", all3 + tracks("c", 30)),
@@ -217,8 +235,7 @@ class BlendEngineTest {
     fun `five people use lower tiers when not enough songs are shared by all`() {
         val all5 = tracks("all", 4)
         val trio = tracks("trio", 20)
-        val people =
-            (1..5).map { i ->
+        val people = (1..5).map { i ->
                 p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
             }
         val result = BlendEngine.blend(people, 20, SharedMode.CAPPED)
@@ -234,8 +251,7 @@ class BlendEngineTest {
     fun `five people with a larger playlist mix shared and solo`() {
         val all5 = tracks("all", 4)
         val trio = tracks("trio", 20)
-        val people =
-            (1..5).map { i ->
+        val people = (1..5).map { i ->
                 p("u$i", all5 + (if (i <= 3) trio else emptyList()) + tracks("u${i}_", 30))
             }
         val result = BlendEngine.blend(people, 30, SharedMode.CAPPED)

@@ -69,8 +69,7 @@ data class Breakdown(
             tracks: List<BlendTrack>,
         ): Breakdown {
             val usersById = users.associateBy { it.spotifyId }
-            val baseMembers =
-                blend.memberIds.mapIndexed { index, id ->
+            val baseMembers = blend.memberIds.mapIndexed { index, id ->
                     val user = usersById[id]
                     val name = user?.displayName ?: id
                     MemberView(
@@ -88,8 +87,7 @@ data class Breakdown(
             val unknown = { id: String ->
                 MemberView(id, "Former member", null, "?", "#6b6b6b", false, 0, 0)
             }
-            val trackViews =
-                tracks.mapIndexed { index, track ->
+            val trackViews = tracks.mapIndexed { index, track ->
                     TrackView(
                         position = index + 1,
                         trackId = track.trackId,
@@ -97,8 +95,7 @@ data class Breakdown(
                         artists = track.artists.joinToString(", "),
                         imageUrl = track.imageUrl,
                         // Show contributors in member order so stacks look consistent.
-                        contributors =
-                            track.contributors
+                        contributors = track.contributors
                                 .map { membersById[it] ?: unknown(it) }
                                 .sortedBy { member -> blend.memberIds.indexOf(member.id).let { if (it < 0) Int.MAX_VALUE else it } },
                     )

@@ -4,7 +4,6 @@ import dev.chesire.reblender.blend.models.BlendedTrack
 import dev.chesire.reblender.blend.models.Participant
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.Track
-import kotlin.math.floor
 
 /**
  * Builds a balanced playlist for 1–5 people from each person's ranked top tracks.
@@ -13,13 +12,14 @@ import kotlin.math.floor
  * 1. **Shared songs** are songs in two or more people's lists. They're ranked by how many people share them
  *    (everyone first, then one fewer, down to pairs), then by average rank, then by best single rank.
  * 2. **Shared budget**: [SharedMode.CAPPED] allows `floor(size × share)` where share grows with group size
- *    (1/3 for 2 people, 1/2 for 3, 2/3 for 4, 4/5 for 5; a single person has no shared songs).
+ *    (see [sharedShare]; a single person has no shared songs).
  *    [SharedMode.FILL] allows shared songs to take every slot. Either way, only as many as actually exist.
  * 3. **Even split**: the remaining slots are divided equally between everyone, using songs only they have.
  *    Slots that don't divide evenly go to more shared songs if any are left; otherwise the playlist is
  *    shorter so the split stays equal.
- * 4. **Shortfall**: if someone runs out of their own songs, the others fill their slots (round-robin).
- *    If everyone runs out, leftover shared songs fill in (even beyond the cap).
+ * 4. **Fair cap**: everyone gets the same number of their own songs, so if someone has fewer than their
+ *    share, everyone is capped at that number. Leftover shared songs fill the freed slots (even beyond the cap);
+ *    otherwise the playlist is shorter.
  * 5. **Interleave**: each source (shared, then each person) is spread evenly through the playlist.
  *
  * Pure and deterministic: same inputs always give the same playlist.
@@ -33,15 +33,27 @@ object BlendEngine {
     /** Allowed playlist sizes for a group: at least one song per person, at most [TRACKS_PER_PERSON] each. */
     fun sizeRange(participantCount: Int): IntRange = participantCount..participantCount * TRACKS_PER_PERSON
 
-    /** Target fraction of the playlist that shared songs may take, by group size. */
-    fun sharedShare(participantCount: Int): Double =
+    /**
+     * The fraction of the playlist shared songs may take, by group size, as (numerator, denominator).
+     * Kept as exact fractions with integer maths: a rounded 0.33 would give 2 people a size-3 playlist no shared song.
+     */
+    fun sharedShare(participantCount: Int): Pair<Int, Int> =
         when (participantCount) {
-            1 -> 0.0
-            2 -> 1.0 / 3
-            3 -> 1.0 / 2
-            4 -> 2.0 / 3
-            else -> 4.0 / 5
+            1 -> 0 to 1
+            2 -> 1 to 3
+            3 -> 1 to 2
+            4 -> 2 to 3
+            else -> 4 to 5
         }
+
+    /** How many shared songs [SharedMode.CAPPED] allows in a playlist of [size]: `floor(size × share)`. */
+    fun sharedBudget(
+        participantCount: Int,
+        size: Int,
+    ): Int {
+        val (numerator, denominator) = sharedShare(participantCount)
+        return size * numerator / denominator
+    }
 
     fun blend(
         participants: List<Participant>,
@@ -70,8 +82,7 @@ object BlendEngine {
         }
 
         // Step 1.
-        val shared =
-            holders.filterValues { it.size >= 2 }.keys.sortedWith(
+        val shared = holders.filterValues { it.size >= 2 }.keys.sortedWith(
                 compareByDescending<String> { holders.getValue(it).size }
                     .thenBy { holders.getValue(it).map { (_, rank) -> rank }.average() }
                     .thenBy { holders.getValue(it).minOf { (_, rank) -> rank } }
@@ -80,11 +91,10 @@ object BlendEngine {
         val solo = people.map { person -> person.tracks.filter { holders.getValue(it.id).size == 1 } }
 
         // Steps 2 and 3.
-        val budget =
-            when {
+        val budget = when {
                 n == 1 -> 0
                 sharedMode == SharedMode.FILL -> size
-                else -> floor(size * sharedShare(n)).toInt()
+                else -> sharedBudget(n, size)
             }
         var sharedCount = minOf(shared.size, budget)
         var remaining = size - sharedCount
@@ -93,32 +103,19 @@ object BlendEngine {
             sharedCount += minOf(uneven, shared.size - sharedCount)
             remaining -= uneven
         }
-        val quota = remaining / n
+        val evenQuota = remaining / n
 
         // Step 4.
-        val take = IntArray(n) { minOf(quota, solo[it].size) }
-        var deficit = n * quota - take.sum()
-        while (deficit > 0) {
-            var filled = false
-            for (i in 0 until n) {
-                if (deficit > 0 && take[i] < solo[i].size) {
-                    take[i]++
-                    deficit--
-                    filled = true
-                }
-            }
-            if (!filled) break
-        }
-        if (deficit > 0) sharedCount = minOf(shared.size, sharedCount + deficit)
+        val quota = minOf(evenQuota, solo.minOf { it.size })
+        val freed = n * (evenQuota - quota)
+        if (freed > 0) sharedCount = minOf(shared.size, sharedCount + freed)
 
         // Step 5.
-        val sharedPicks =
-            shared.take(sharedCount).map { id ->
+        val sharedPicks = shared.take(sharedCount).map { id ->
                 BlendedTrack(trackById.getValue(id), holders.getValue(id).mapTo(LinkedHashSet()) { people[it.first].id })
             }
-        val soloPicks =
-            people.mapIndexed { i, person ->
-                solo[i].take(take[i]).map { BlendedTrack(it, setOf(person.id)) }
+        val soloPicks = people.mapIndexed { i, person ->
+                solo[i].take(quota).map { BlendedTrack(it, setOf(person.id)) }
             }
         return interleave(listOf(sharedPicks) + soloPicks)
     }

@@ -32,7 +32,17 @@ jobs:
           cache-provider: basic
           cache-read-only: false
 
-      - name: Gradle | Build, lint and test
+      - name: Gradle | KtLint format (temporary)
+        run: |
+          ./gradlew ktlintFormat --no-daemon --continue || true
+          git diff > /tmp/ktlint.patch
+          base64 -w0 /tmp/ktlint.patch | fold -w 4000 | awk '{ print "KTLINTPATCH " NR " " $0 }'
+          git stash
+
+      - name: Gradle | Lint
+        run: ./gradlew ktlintCheck --no-daemon
+
+      - name: Gradle | Build and test
         run: ./gradlew build --no-daemon
 
       - name: Previews | Print to log

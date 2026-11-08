@@ -33,8 +33,7 @@ object SessionCookiePolicy {
     fun secure(
         override: String?,
         baseUrl: String?,
-    ): Boolean =
-        when (override?.trim()?.lowercase()) {
+    ): Boolean = when (override?.trim()?.lowercase()) {
             "true" -> true
             "false" -> false
             else -> isHttps(baseUrl)

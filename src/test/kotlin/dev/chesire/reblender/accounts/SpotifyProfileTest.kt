@@ -7,8 +7,7 @@ import kotlin.test.assertNull
 class SpotifyProfileTest {
     @Test
     fun `picks the smallest image that is at least 64px`() {
-        val images =
-            listOf(
+        val images = listOf(
                 mapOf("url" to "https://i.scdn.co/image/big", "height" to 300, "width" to 300),
                 mapOf("url" to "https://i.scdn.co/image/small", "height" to 64, "width" to 64),
             )

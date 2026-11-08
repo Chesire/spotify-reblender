@@ -75,8 +75,7 @@ class SecurityConfig {
          * Scripts and styles only from this app; images also from Spotify's CDNs (covers, profile pictures).
          * Inline style *attributes* are allowed for per-member colours and bar widths; inline <style>/<script> are not.
          */
-        const val CONTENT_SECURITY_POLICY =
-            "default-src 'self'; " +
+        const val CONTENT_SECURITY_POLICY = "default-src 'self'; " +
                 "script-src 'self'; " +
                 "style-src 'self'; " +
                 "style-src-attr 'unsafe-inline'; " +
@@ -88,7 +87,6 @@ class SecurityConfig {
                 "form-action 'self'; " +
                 "frame-ancestors 'none'"
 
-        const val PERMISSIONS_POLICY =
-            "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+        const val PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
     }
 }

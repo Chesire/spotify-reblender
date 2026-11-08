@@ -28,14 +28,12 @@ class SpotifyClient(
     private val tokens: SpotifyTokens,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-    private val rest =
-        RestClient
+    private val rest = RestClient
             .builder()
             .baseUrl(properties.spotifyApiBaseUrl)
             .requestInterceptor(OutgoingRequestLogger())
             .build()
-    private val json =
-        Json {
+    private val json = Json {
             ignoreUnknownKeys = true
             explicitNulls = false
         }
@@ -45,8 +43,7 @@ class SpotifyClient(
         spotifyId: String,
         range: TimeRange,
     ): List<Track> {
-        val body =
-            rest
+        val body = rest
                 .get()
                 .uri("/me/top/tracks?time_range={range}&limit={limit}", range.spotifyTimeRange, TOP_TRACKS_LIMIT)
                 .headers { it.setBearerAuth(tokens.accessTokenFor(spotifyId)) }
@@ -59,8 +56,7 @@ class SpotifyClient(
         val missingId = items.count { !it.isLocal && (it.id == null || it.uri == null) }
         // Only well-formed IDs whose URI is exactly spotify:track:<id> are used (they end up in links and API calls).
         val malformed = items.count { !it.isLocal && it.id != null && it.uri != null && !isValidTrack(it.id, it.uri) }
-        val tracks =
-            items
+        val tracks = items
                 .filter { !it.isLocal && it.id != null && it.uri != null && isValidTrack(it.id, it.uri) }
                 .map {
                     Track(
@@ -68,8 +64,7 @@ class SpotifyClient(
                         uri = it.uri!!,
                         name = it.name,
                         artists = it.artists.map(ArtistDto::name),
-                        imageUrl =
-                            SpotifyImages.pick(
+                        imageUrl = SpotifyImages.pick(
                                 it.album?.images.orEmpty().mapNotNull { img ->
                                     img.url?.let { url -> url to img.height }
                                 },
@@ -97,13 +92,11 @@ class SpotifyClient(
         name: String,
         description: String,
     ): CreatedPlaylist {
-        val request =
-            json.encodeToString(
+        val request = json.encodeToString(
                 CreatePlaylistRequest.serializer(),
                 CreatePlaylistRequest(name, description, isPublic = false),
             )
-        val body =
-            rest
+        val body = rest
                 .post()
                 .uri("/me/playlists")
                 .headers { it.setBearerAuth(tokens.accessTokenFor(ownerId)) }
@@ -167,8 +160,7 @@ class SpotifyClient(
 
     /** Spotify's names for its three top-items windows. */
     private val TimeRange.spotifyTimeRange: String
-        get() =
-            when (this) {
+        get() = when (this) {
                 TimeRange.RECENT -> "short_term"
                 TimeRange.HALF_YEAR -> "medium_term"
                 TimeRange.ALL_TIME -> "long_term"

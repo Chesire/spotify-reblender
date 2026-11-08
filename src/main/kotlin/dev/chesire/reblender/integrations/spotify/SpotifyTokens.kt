@@ -17,13 +17,11 @@ class SpotifyTokens(
 ) {
     /** A valid access token for [spotifyId], refreshed if needed. */
     fun accessTokenFor(spotifyId: String): String {
-        val request =
-            OAuth2AuthorizeRequest
+        val request = OAuth2AuthorizeRequest
                 .withClientRegistrationId(REGISTRATION_ID)
                 .principal(spotifyId)
                 .build()
-        val client =
-            try {
+        val client = try {
                 clientManager.authorize(request)
             } catch (e: ClientAuthorizationException) {
                 // e.g. invalid_grant: the refresh token has expired. The stored client is removed by Spring.

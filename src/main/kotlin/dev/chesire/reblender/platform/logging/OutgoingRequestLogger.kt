@@ -31,8 +31,7 @@ class OutgoingRequestLogger : ClientHttpRequestInterceptor {
         val start = System.nanoTime()
         val uri = request.uri
         val target = "${uri.scheme}://${uri.authority}${LogRedaction.target(uri.rawPath ?: "", uri.rawQuery)}"
-        val response =
-            try {
+        val response = try {
                 execution.execute(request, body)
             } catch (e: IOException) {
                 log.warn("OUT {} {} -> failed: {} ({} ms)", request.method, target, e.javaClass.simpleName, elapsedMs(start))
@@ -40,8 +39,7 @@ class OutgoingRequestLogger : ClientHttpRequestInterceptor {
             }
         val status = response.statusCode
         if (!status.isError) {
-            val size =
-                response.headers.contentLength
+            val size = response.headers.contentLength
                     .takeIf { it >= 0 }
                     ?.let { ", $it bytes" } ?: ""
             log.info("OUT {} {} -> {} ({} ms{})", request.method, target, status.value(), elapsedMs(start), size)

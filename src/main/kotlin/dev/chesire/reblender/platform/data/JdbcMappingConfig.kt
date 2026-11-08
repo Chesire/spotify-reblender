@@ -15,8 +15,7 @@ class JdbcMappingConfig {
          */
         @Bean
         @JvmStatic
-        fun unquotedIdentifiers(): BeanPostProcessor =
-            object : BeanPostProcessor {
+        fun unquotedIdentifiers(): BeanPostProcessor = object : BeanPostProcessor {
                 override fun postProcessBeforeInitialization(
                     bean: Any,
                     beanName: String,

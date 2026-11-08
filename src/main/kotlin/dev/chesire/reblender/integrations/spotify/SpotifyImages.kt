@@ -11,15 +11,13 @@ object SpotifyImages {
     fun pick(
         images: List<Pair<String, Int?>>,
         minHeight: Int = 64,
-    ): String? =
-        images
+    ): String? = images
             .mapNotNull { (url, height) -> SafeUrls.httpsOrNull(url)?.let { it to height } }
             .let { safe -> pickFrom(safe, minHeight) }
 
     private fun pickFrom(
         images: List<Pair<String, Int?>>,
         minHeight: Int,
-    ): String? =
-        images.filter { (it.second ?: 0) >= minHeight }.minByOrNull { it.second ?: 0 }?.first
+    ): String? = images.filter { (it.second ?: 0) >= minHeight }.minByOrNull { it.second ?: 0 }?.first
             ?: images.firstOrNull()?.first
 }

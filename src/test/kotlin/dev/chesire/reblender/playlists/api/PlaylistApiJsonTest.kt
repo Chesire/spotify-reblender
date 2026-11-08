@@ -21,8 +21,7 @@ class PlaylistApiJsonTest {
 
     @Test
     fun `playlist response is plain JSON`() {
-        val blend =
-            Blend(
+        val blend = Blend(
                 playlistId = "0123456789abcdefghijkl",
                 playlistName = "A & B - Recent favourites",
                 playlistUrl = "https://open.spotify.com/playlist/0123456789abcdefghijkl",

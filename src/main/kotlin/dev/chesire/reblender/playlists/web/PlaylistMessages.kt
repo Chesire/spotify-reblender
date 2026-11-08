@@ -9,8 +9,7 @@ import java.time.format.DateTimeFormatter
 
 /** The wording shown to people after playlist actions. */
 object PlaylistMessages {
-    private val UPDATED_FORMAT: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
+    private val UPDATED_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
 
     private const val SPOTIFY_FORBIDDEN =
         "Spotify refused the request (403). Check everyone in the blend is on the app's allowlist in the Spotify dashboard."
@@ -51,15 +50,13 @@ object PlaylistMessages {
     fun loginExpired(
         isMe: Boolean,
         name: String,
-    ): String =
-        if (isMe) {
+    ): String = if (isMe) {
             "Your Spotify login has expired. Log out and log in again."
         } else {
             "$name needs to log in to the app again (Spotify logins expire after 6 months)."
         }
 
-    fun spotifyError(e: RestClientResponseException): String =
-        when (e.statusCode.value()) {
+    fun spotifyError(e: RestClientResponseException): String = when (e.statusCode.value()) {
             403 -> SPOTIFY_FORBIDDEN
             404 -> "Spotify couldn't find that playlist. It may have been deleted."
             429 -> "Spotify is rate limiting the app. Try again in a minute."
@@ -74,8 +71,7 @@ object PlaylistMessages {
         val blend = outcome.blend
         if (blend.trackCount >= blend.size) return ""
         val counts = outcome.usableTracks.entries.joinToString(", ") { (id, count) -> "${nameOf(id)}: $count" }
-        val why =
-            if (blend.memberIds.size == 1) {
+        val why = if (blend.memberIds.size == 1) {
                 "Spotify only had that many usable top tracks for you"
             } else {
                 "not enough usable top tracks to fill an even split"

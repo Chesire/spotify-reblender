@@ -12,8 +12,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BreakdownTest {
-    private val blend =
-        Blend(
+    private val blend = Blend(
             playlistId = "p1",
             playlistName = "A & B - Recent favourites",
             playlistUrl = "https://open.spotify.com/playlist/p1",

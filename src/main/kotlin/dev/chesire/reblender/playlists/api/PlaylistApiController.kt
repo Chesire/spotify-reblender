@@ -29,8 +29,7 @@ class PlaylistApiController(
         authentication: Authentication,
         @RequestBody request: CreatePlaylistRequest,
     ): ResponseEntity<PlaylistResultResponse> {
-        val outcome =
-            playlists.create(authentication.name, request.partnerIds, request.timeRange, request.size, request.sharedMode)
+        val outcome = playlists.create(authentication.name, request.partnerIds, request.timeRange, request.size, request.sharedMode)
         return ResponseEntity.status(HttpStatus.CREATED).body(PlaylistResultResponse.of(outcome))
     }
 

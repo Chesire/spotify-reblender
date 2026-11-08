@@ -9,8 +9,7 @@ object LogRedaction {
     const val MASK = "***"
 
     /** Query parameters whose values are safe to show (Spotify API paging/filters and this app's own flags). */
-    private val SAFE_PARAMS =
-        setOf(
+    private val SAFE_PARAMS = setOf(
             "time_range",
             "limit",
             "offset",
@@ -25,8 +24,7 @@ object LogRedaction {
         )
 
     /** Keys whose values must never appear, if they show up in a JSON error body. */
-    private val SECRET_JSON_KEY =
-        Regex(
+    private val SECRET_JSON_KEY = Regex(
             "\"(access_token|refresh_token|id_token|token|client_secret|code|code_verifier|assertion)\"\\s*:\\s*\"[^\"]*\"",
             RegexOption.IGNORE_CASE,
         )

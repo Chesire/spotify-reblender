@@ -51,8 +51,7 @@ data class BlendTrackEntity(
 /** ASCII unit separator: can't appear in names, so lists round-trip safely. */
 private const val SEPARATOR = "\u001F"
 
-fun BlendEntity.toModel() =
-    Blend(
+fun BlendEntity.toModel() = Blend(
         playlistId = playlistId,
         playlistName = playlistName,
         playlistUrl = playlistUrl,
@@ -66,8 +65,7 @@ fun BlendEntity.toModel() =
         updatedAt = updatedAt,
     )
 
-fun BlendEntity.tracksToModel() =
-    tracks.map {
+fun BlendEntity.tracksToModel() = tracks.map {
         BlendTrack(
             trackId = it.trackId,
             uri = it.trackUri,
@@ -78,8 +76,7 @@ fun BlendEntity.tracksToModel() =
         )
     }
 
-fun Blend.toEntity(tracks: List<BlendTrack>) =
-    BlendEntity(
+fun Blend.toEntity(tracks: List<BlendTrack>) = BlendEntity(
         playlistId = playlistId,
         playlistName = playlistName,
         playlistUrl = playlistUrl,
@@ -94,8 +91,7 @@ fun Blend.toEntity(tracks: List<BlendTrack>) =
         tracks = tracks.map(BlendTrack::toEntity),
     )
 
-private fun BlendTrack.toEntity() =
-    BlendTrackEntity(
+private fun BlendTrack.toEntity() = BlendTrackEntity(
         trackId = trackId,
         trackUri = uri,
         trackName = name.take(500),

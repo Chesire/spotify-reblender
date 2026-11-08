@@ -136,8 +136,7 @@ class PlaylistController(
         redirect: RedirectAttributes,
         action: () -> String,
     ) {
-        val error =
-            try {
+        val error = try {
                 redirect.addFlashAttribute("message", action())
                 return
             } catch (e: ReloginRequiredException) {

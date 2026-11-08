@@ -80,8 +80,7 @@ class OAuthClientConfig {
         }
 
     /** Mirrors Spring Security's default token-endpoint RestClient, with [OutgoingRequestLogger] added. */
-    private fun loggingTokenRestClient(): RestClient =
-        RestClient
+    private fun loggingTokenRestClient(): RestClient = RestClient
             .builder()
             .configureMessageConverters { converters ->
                 converters.addCustomConverter(FormHttpMessageConverter())
@@ -91,8 +90,7 @@ class OAuthClientConfig {
             .build()
 
     /** Mirrors DefaultOAuth2UserService's default RestTemplate, with [OutgoingRequestLogger] added. */
-    private fun loggingUserInfoRestTemplate(): RestTemplate =
-        RestTemplate().apply {
+    private fun loggingUserInfoRestTemplate(): RestTemplate = RestTemplate().apply {
             errorHandler = OAuth2ErrorResponseErrorHandler()
             interceptors.add(OutgoingRequestLogger())
         }

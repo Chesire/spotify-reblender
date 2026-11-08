@@ -11,8 +11,7 @@ object SafeUrls {
 
     fun httpsOrNull(url: String?): String? {
         if (url.isNullOrBlank() || url.length > MAX_LENGTH) return null
-        val uri =
-            try {
+        val uri = try {
                 URI(url.trim())
             } catch (e: java.net.URISyntaxException) {
                 return null
