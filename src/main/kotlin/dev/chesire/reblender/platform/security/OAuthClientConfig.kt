@@ -40,7 +40,8 @@ class OAuthClientConfig {
 
     /** Loads the Spotify profile after login. */
     @Bean
-    fun oauth2UserService(): DefaultOAuth2UserService = DefaultOAuth2UserService().apply { setRestOperations(loggingUserInfoRestTemplate()) }
+    fun oauth2UserService(): DefaultOAuth2UserService =
+        DefaultOAuth2UserService().apply { setRestOperations(loggingUserInfoRestTemplate()) }
 
     /** Fails fast at startup if the key is missing, unreadable or malformed. */
     @Bean

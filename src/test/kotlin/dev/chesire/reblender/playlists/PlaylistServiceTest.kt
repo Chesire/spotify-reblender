@@ -11,9 +11,9 @@ import dev.chesire.reblender.playlists.data.toEntity
 import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.spotify.SpotifyClient
 import dev.chesire.reblender.spotify.models.CreatedPlaylist
-import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
@@ -92,10 +92,14 @@ class PlaylistServiceTest {
         val outcome = service.create("owner", listOf("friend"), TimeRange.RECENT, 10, SharedMode.CAPPED)
 
         assertEquals(listOf("owner", "friend"), outcome.blend.memberIds)
-        val saved = ArgumentCaptor.forClass(BlendEntity::class.java)
-        verify(blends).insert(saved.capture())
-        assertEquals(listOf("owner", "friend"), saved.value.members.map { it.spotifyId })
-        assertEquals(10, saved.value.tracks.size)
+        val saved =
+            mockingDetails(blends)
+                .invocations
+                .single { it.method.name == "insert" }
+                .arguments
+                .single() as BlendEntity
+        assertEquals(listOf("owner", "friend"), saved.members.map { it.spotifyId })
+        assertEquals(10, saved.tracks.size)
     }
 
     @Test

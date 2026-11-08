@@ -22,8 +22,7 @@ class PlaylistApiController(
     private val playlists: PlaylistService,
 ) {
     @GetMapping
-    fun list(authentication: Authentication): List<PlaylistResponse> =
-        playlists.playlistsFor(authentication.name).map(PlaylistResponse::of)
+    fun list(authentication: Authentication): List<PlaylistResponse> = playlists.playlistsFor(authentication.name).map(PlaylistResponse::of)
 
     @PostMapping
     fun create(

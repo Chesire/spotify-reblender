@@ -48,8 +48,7 @@ class AccountApiController(
 
     /** People the signed-in user can include in a blend. */
     @GetMapping("/people")
-    fun people(authentication: Authentication): List<PersonResponse> =
-        accounts.partnersFor(authentication.name).map(PersonResponse::of)
+    fun people(authentication: Authentication): List<PersonResponse> = accounts.partnersFor(authentication.name).map(PersonResponse::of)
 }
 
 data class MeResponse(
