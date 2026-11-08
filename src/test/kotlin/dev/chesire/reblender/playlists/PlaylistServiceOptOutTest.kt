@@ -1,22 +1,23 @@
 package dev.chesire.reblender.playlists
 
-import dev.chesire.reblender.blend.SharedMode
-import dev.chesire.reblender.blend.TimeRange
-import dev.chesire.reblender.blend.Track
-import dev.chesire.reblender.spotify.CreatedPlaylist
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.blend.models.Track
+import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.spotify.SpotifyClient
-import dev.chesire.reblender.users.AppUser
+import dev.chesire.reblender.spotify.models.CreatedPlaylist
 import dev.chesire.reblender.users.UserRepository
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verifyNoInteractions
-import org.mockito.Mockito.`when`
+import dev.chesire.reblender.users.models.AppUser
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import org.mockito.Mockito.`when`
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.verifyNoInteractions
 
-/** S1: people who turned off blending can't be included, and their top tracks are never fetched. */
+/** People who turned off blending can't be included, and their top tracks are never fetched. */
 class PlaylistServiceOptOutTest {
 
     private val spotify = mock(SpotifyClient::class.java)

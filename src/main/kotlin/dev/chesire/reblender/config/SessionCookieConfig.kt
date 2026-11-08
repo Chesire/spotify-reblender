@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 
 /**
- * S3: the session cookie is marked Secure whenever the app's public address is HTTPS, so a deployment
+ * The session cookie is marked Secure whenever the app's public address is HTTPS, so a deployment
  * behind TLS can't accidentally send the session over plain HTTP. SESSION_COOKIE_SECURE=true/false overrides it.
  */
 @Configuration

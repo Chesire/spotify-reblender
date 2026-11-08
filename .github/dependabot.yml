@@ -1,4 +1,3 @@
-# S8: keep the pinned action SHAs and the Gradle dependencies up to date via reviewed PRs.
 version: 2
 updates:
   - package-ecosystem: github-actions

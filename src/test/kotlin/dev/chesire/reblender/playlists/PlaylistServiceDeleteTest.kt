@@ -1,21 +1,21 @@
 package dev.chesire.reblender.playlists
 
-import dev.chesire.reblender.blend.SharedMode
-import dev.chesire.reblender.blend.TimeRange
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.spotify.SpotifyClient
 import dev.chesire.reblender.users.UserRepository
+import java.time.Instant
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
-import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.`when`
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.client.HttpClientErrorException
-import java.time.Instant
-import kotlin.test.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class PlaylistServiceDeleteTest {
 
@@ -48,25 +48,14 @@ class PlaylistServiceDeleteTest {
     )
 
     @Test
-    fun `a login without the delete scope keeps the blend so it can be retried`() {
+    fun `a Spotify refusal still stops managing the blend and reports the status`() {
         doThrow(forbidden("""{"error": {"status": 403, "message": "Insufficient client scope" } }"""))
             .`when`(spotify).removePlaylistFromLibrary("owner", id)
 
         val outcome = service.delete("owner", id, removeFromSpotify = true)
 
-        assertTrue(outcome.needsRelogin)
         assertFalse(outcome.removedFromSpotify)
-        verify(blends, never()).delete(id, "owner")
-    }
-
-    @Test
-    fun `other refusals still stop managing the blend`() {
-        doThrow(forbidden("""{"error": {"status": 403, "message": "Forbidden" } }"""))
-            .`when`(spotify).removePlaylistFromLibrary("owner", id)
-
-        val outcome = service.delete("owner", id, removeFromSpotify = true)
-
-        assertFalse(outcome.needsRelogin)
+        assertEquals(403, outcome.spotifyStatus)
         verify(blends).delete(id, "owner")
     }
 }

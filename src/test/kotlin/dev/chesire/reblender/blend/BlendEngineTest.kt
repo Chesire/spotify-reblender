@@ -1,5 +1,9 @@
 package dev.chesire.reblender.blend
 
+import dev.chesire.reblender.blend.models.BlendedTrack
+import dev.chesire.reblender.blend.models.Participant
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.Track
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

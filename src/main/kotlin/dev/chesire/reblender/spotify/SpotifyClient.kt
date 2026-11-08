@@ -1,22 +1,25 @@
 package dev.chesire.reblender.spotify
 
-import dev.chesire.reblender.blend.TimeRange
-import dev.chesire.reblender.blend.Track
+import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.blend.models.Track
 import dev.chesire.reblender.config.ReblenderProperties
 import dev.chesire.reblender.logging.OutgoingRequestLogger
 import dev.chesire.reblender.security.SafeUrls
 import dev.chesire.reblender.security.SpotifyIds
+import dev.chesire.reblender.spotify.dtos.ArtistDto
+import dev.chesire.reblender.spotify.dtos.CreatePlaylistRequest
+import dev.chesire.reblender.spotify.dtos.PlaylistDto
+import dev.chesire.reblender.spotify.dtos.ReplaceItemsRequest
+import dev.chesire.reblender.spotify.dtos.TopTracksResponse
+import dev.chesire.reblender.spotify.models.CreatedPlaylist
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
-data class CreatedPlaylist(val id: String, val url: String)
-
 /**
  * Thin wrapper over the Spotify Web API endpoints this app needs.
- * Uses the post-February-2026 endpoints (`/me/playlists`, `/playlists/{id}/items`).
  * JSON is handled with kotlinx.serialization on raw strings, so we don't depend on Spring's Jackson setup.
  */
 @Component
@@ -46,7 +49,7 @@ class SpotifyClient(
         val items = json.decodeFromString(TopTracksResponse.serializer(), body).items
         val local = items.count { it.isLocal }
         val missingId = items.count { !it.isLocal && (it.id == null || it.uri == null) }
-        // S9: only well-formed IDs whose URI is exactly spotify:track:<id> are used (they end up in links and API calls).
+        // Only well-formed IDs whose URI is exactly spotify:track:<id> are used (they end up in links and API calls).
         val malformed = items.count { !it.isLocal && it.id != null && it.uri != null && !isValidTrack(it.id, it.uri) }
         val tracks = items
             .filter { !it.isLocal && it.id != null && it.uri != null && isValidTrack(it.id, it.uri) }
@@ -84,7 +87,7 @@ class SpotifyClient(
 
         val playlist = json.decodeFromString(PlaylistDto.serializer(), body)
         check(SpotifyIds.isPlaylistId(playlist.id)) { "Spotify returned a malformed playlist ID" }
-        // S5: only an https link is stored; otherwise fall back to the standard one built from the (validated) ID.
+        // Only an https link is stored; otherwise fall back to the standard one built from the (validated) ID.
         val url = SafeUrls.httpsOrNull(playlist.externalUrls.spotify) ?: playlistUrl(playlist.id)
         return CreatedPlaylist(playlist.id, url)
     }
@@ -112,7 +115,7 @@ class SpotifyClient(
 
     /**
      * Removes a playlist from the owner's library, which is how Spotify "deletes" a playlist you own.
-     * Uses the post-February-2026 generic library endpoint. Spotify keeps deleted playlists recoverable
+     * Spotify keeps deleted playlists recoverable
      * for a while at spotify.com/account/recover-playlists.
      */
     fun removePlaylistFromLibrary(ownerId: String, playlistId: String) {

@@ -17,47 +17,29 @@ jobs:
     name: Build and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Git | Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - name: Java | Set up JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: 21
 
-      # Also validates the Gradle wrapper checksum.
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: Gradle | Set up
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           cache-provider: basic
-          # Caches are only written from the default branch by default, and main has no runs yet, so every
-          # PR run downloaded Gradle afresh (and failed when GitHub's release downloads returned 504s).
-          # A branch's cache is only visible to that branch and ones created from it.
           cache-read-only: false
 
-      # The wrapper download comes from GitHub release assets, which sometimes return 5xx. Retry with backoff.
-      - name: Download Gradle
-        run: |
-          for i in 1 2 3 4 5; do
-            ./gradlew --version --no-daemon && exit 0
-            echo "Gradle download failed (attempt $i), retrying in $((i * 20))s"
-            sleep $((i * 20))
-          done
-          exit 1
-
-      - name: Build and run tests
+      - name: Gradle | Build, lint and test
         run: ./gradlew build --no-daemon
 
-      - name: Print page previews
+      - name: Previews | Print to log
         if: always()
-        run: |
-          ls -la build/previews || true
-          # Chunked: very long log lines get dropped from the GitHub log.
-          for f in build/previews/*.b64; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f" .b64)
-            fold -w 4000 "$f" | awk -v n="$name" '{ print "PREVIEW " n " " NR " " $0 }'
-          done
+        run: scripts/ci/print-previews.sh
 
-      - name: Upload page previews
+      - name: Previews | Upload
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -65,22 +47,24 @@ jobs:
           path: build/previews/*.html
           if-no-files-found: ignore
 
-      - name: Upload test reports
+      - name: Gradle | Upload reports
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: test-reports
-          path: build/reports/tests/
+          name: reports
+          path: build/reports/
 
   docker:
     name: Docker image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Git | Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Docker | Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Build image
+      - name: Docker | Build image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -90,148 +74,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Image runs as non-root
-        run: |
-          user=$(docker image inspect spotify-reblender:ci --format '{{.Config.User}}')
-          echo "Image user: $user"
-          test -n "$user" && test "$user" != "root"
+      - name: Docker | Check image runs as non-root
+        run: scripts/ci/check-non-root.sh
 
-      - name: Refuses to start without an encryption key
-        run: |
-          set +e
-          timeout 120 docker run --rm \
-            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
-            spotify-reblender:ci > no-key.log 2>&1
-          status=$?
-          set -e
-          tail -n 20 no-key.log
-          if [ "$status" -eq 0 ] || [ "$status" -eq 124 ]; then
-            echo "Expected the app to exit with an error when TOKEN_ENCRYPTION_KEY is missing (status $status)"
-            exit 1
-          fi
-          grep -q "TOKEN_ENCRYPTION_KEY" no-key.log
+      - name: App | Check startup is refused without a key
+        run: scripts/ci/check-requires-key.sh
 
-      - name: Starts with the key in a file (Docker secret path)
-        run: |
-          mkdir -p secrets
-          openssl rand -base64 32 > secrets/token_encryption_key
-          sudo chown 10001:10001 secrets/token_encryption_key
-          sudo chmod 400 secrets/token_encryption_key
+      - name: App | Check startup with a key file
+        run: scripts/ci/check-key-file.sh
 
-          # The compose override must resolve the secret relative to the project directory.
-          touch .env
-          docker compose -f docker-compose.yml -f deploy/docker-compose.secret.yml config > resolved.yml
-          grep -q "$PWD/secrets/token_encryption_key" resolved.yml
+      - name: App | Smoke test
+        run: scripts/ci/smoke-test.sh
 
-          docker run -d --name reblender-keyfile \
-            --read-only --tmpfs /tmp \
-            -v "$PWD/secrets/token_encryption_key:/run/secrets/token_encryption_key:ro" \
-            -p 127.0.0.1:8081:8080 \
-            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
-            -e TOKEN_ENCRYPTION_KEY_FILE=/run/secrets/token_encryption_key \
-            spotify-reblender:ci
-          for i in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:8081/ -o /dev/null; then ok=1; break; fi
-            sleep 2
-          done
-          docker logs reblender-keyfile | tail -n 20
-          docker rm -f reblender-keyfile
-          test "${ok:-0}" = 1
+      - name: App | Check logs contain no secrets
+        run: scripts/ci/check-logs-redacted.sh
 
-      - name: Smoke test the container
-        run: |
-          docker run -d --name reblender \
-            --read-only --tmpfs /tmp \
-            --security-opt no-new-privileges:true \
-            -v reblender-ci:/data \
-            -p 127.0.0.1:8080:8080 \
-            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
-            -e TOKEN_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
-            spotify-reblender:ci
+      - name: App | Check Secure cookie over https
+        run: scripts/ci/check-secure-cookie.sh
 
-          for i in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:8080/ -o home.html; then break; fi
-            sleep 2
-          done
-
-          docker logs reblender | tail -n 40
-          grep -q "Log in with Spotify" home.html
-
-          # Login must redirect to Spotify's authorize endpoint with only the expected scopes.
-          location=$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/oauth2/authorization/spotify)
-          echo "Redirect: $location"
-          echo "$location" | grep -q "^https://accounts.spotify.com/authorize"
-          echo "$location" | grep -q "scope=user-top-read%20playlist-modify-private%20playlist-modify-public&"
-          # S6: PKCE.
-          echo "$location" | grep -q "code_challenge="
-          echo "$location" | grep -q "code_challenge_method=S256"
-
-          # S4: security headers.
-          curl -s -D headers.txt -o /dev/null http://127.0.0.1:8080/
-          cat headers.txt
-          grep -qi "^content-security-policy:.*script-src 'self';" headers.txt
-          grep -qi "^content-security-policy:.*frame-ancestors 'none'" headers.txt
-          grep -qi "^referrer-policy: strict-origin-when-cross-origin" headers.txt
-          grep -qi "^permissions-policy:.*camera=()" headers.txt
-          grep -qi "^x-content-type-options: nosniff" headers.txt
-
-          # S2: forwarded headers from the client are ignored by default.
-          curl -s -D fwd.txt -o /dev/null -H "X-Forwarded-Host: evil.example" -H "X-Forwarded-Proto: https" \
-            http://127.0.0.1:8080/playlists/0123456789abcdefghijkl
-          cat fwd.txt
-          # (bash -e ignores a failing "! cmd", so negative checks use an explicit exit)
-          if grep -qi "evil.example" fwd.txt; then echo "forwarded host was trusted"; exit 1; fi
-
-          # S3: over plain http the session cookie is not Secure.
-          curl -s -D cookie-http.txt -o /dev/null http://127.0.0.1:8080/oauth2/authorization/spotify
-          grep -i "^set-cookie: JSESSIONID" cookie-http.txt
-          if grep -i "^set-cookie: JSESSIONID" cookie-http.txt | grep -qi "secure"; then echo "cookie unexpectedly Secure"; exit 1; fi
-
-          # Protected routes must not be reachable anonymously.
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/playlists)
-          echo "Anonymous POST /playlists -> $code"
-          test "$code" != "200"
-
-      - name: Requests are logged without secrets
-        run: |
-          # A fake OAuth callback: its code and state must never reach the log.
-          curl -s -o /dev/null "http://127.0.0.1:8080/login/oauth2/code/spotify?code=SECRETCODE123&state=SECRETSTATE456"
-          challenge=$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/oauth2/authorization/spotify \
-            | sed -n 's/.*code_challenge=\([^&]*\).*/\1/p')
-          session=$(curl -s -D - -o /dev/null http://127.0.0.1:8080/oauth2/authorization/spotify \
-            | sed -n 's/^[Ss]et-[Cc]ookie: JSESSIONID=\([^;]*\).*/\1/p')
-          sleep 1
-          docker logs reblender > app.log 2>&1
-          grep "reblender.http.in" app.log | tail -n 20
-          grep -q "IN  GET / -> 200" app.log
-          grep -q "IN  GET /oauth2/authorization/spotify -> 302" app.log
-          grep -q "IN  GET /login/oauth2/code/spotify?code=\*\*\*&state=\*\*\*" app.log
-          for secret in SECRETCODE123 SECRETSTATE456 "$challenge" "$session"; do
-            test -n "$secret" || { echo "empty secret value"; exit 1; }
-            if grep -qF "$secret" app.log; then echo "secret value found in the log"; exit 1; fi
-          done
-
-      - name: Session cookie is Secure when the public URL is https (S3)
-        run: |
-          docker run -d --name reblender-https \
-            --read-only --tmpfs /tmp \
-            -p 127.0.0.1:8082:8080 \
-            -e SPOTIFY_CLIENT_ID=ci -e SPOTIFY_CLIENT_SECRET=ci \
-            -e TOKEN_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
-            -e APP_BASE_URL=https://reblender.example.com \
-            -e DATABASE_URL=jdbc:h2:mem:ci \
-            spotify-reblender:ci
-          for i in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:8082/ -o /dev/null; then break; fi
-            sleep 2
-          done
-          curl -s -D cookie-https.txt -o /dev/null http://127.0.0.1:8082/oauth2/authorization/spotify
-          cat cookie-https.txt
-          docker logs reblender-https 2>&1 | tail -n 20
-          docker rm -f reblender-https
-          grep -i "^set-cookie: JSESSIONID" cookie-https.txt | grep -qi "secure"
-          grep -i "^location:" cookie-https.txt | grep -q "redirect_uri=https://reblender.example.com/login/oauth2/code/spotify"
-
-      - name: Container logs
+      - name: Docker | Print container logs
         if: always()
         run: docker logs reblender 2>&1 | tail -n 200 || true

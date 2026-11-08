@@ -1,33 +1,22 @@
 package dev.chesire.reblender.playlists
 
-import dev.chesire.reblender.security.SpotifyIds
 import dev.chesire.reblender.blend.BlendEngine
-import dev.chesire.reblender.blend.BlendedTrack
-import dev.chesire.reblender.blend.Participant
-import dev.chesire.reblender.blend.SharedMode
-import dev.chesire.reblender.blend.TimeRange
+import dev.chesire.reblender.blend.models.BlendedTrack
+import dev.chesire.reblender.blend.models.Participant
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.playlists.models.Blend
+import dev.chesire.reblender.playlists.models.BlendOutcome
+import dev.chesire.reblender.playlists.models.BlendTrack
+import dev.chesire.reblender.playlists.models.DeleteOutcome
+import dev.chesire.reblender.security.SpotifyIds
 import dev.chesire.reblender.spotify.SpotifyClient
-import dev.chesire.reblender.users.AppUser
 import dev.chesire.reblender.users.UserRepository
+import dev.chesire.reblender.users.models.AppUser
+import java.time.Instant
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientResponseException
-import java.time.Instant
-
-/**
- * Result of deleting a blend. [spotifyStatus] is null when Spotify wasn't asked (or succeeded), otherwise
- * the HTTP status Spotify refused with; [removedFromSpotify] says whether it's gone from the library.
- */
-data class DeleteOutcome(
-    val playlistName: String,
-    val removedFromSpotify: Boolean,
-    val spotifyStatus: Int?,
-    /** The owner's stored login predates the scope needed to delete; the blend is kept so they can retry after logging in again. */
-    val needsRelogin: Boolean = false,
-)
-
-/** A created/updated blend plus how many usable top tracks each member had (to explain short playlists). */
-data class BlendOutcome(val blend: Blend, val usableTracks: Map<String, Int>)
 
 @Service
 class PlaylistService(
@@ -48,7 +37,7 @@ class PlaylistService(
         size: Int,
         sharedMode: SharedMode,
     ): BlendOutcome {
-        // S9: bound and shape-check what came from the form before using it in queries or messages.
+        // Bound and shape-check what came from the form before using it in queries or messages.
         require(partnerIds.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
             "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
         }
@@ -144,10 +133,6 @@ class PlaylistService(
                 } else {
                     status = e.statusCode.value()
                     log.warn("Spotify refused to remove playlist {} ({}): {}", playlistId, status, e.responseBodyAsString)
-                    if (status == 403 && e.responseBodyAsString.contains("Insufficient client scope", ignoreCase = true)) {
-                        // Logged in before playlist-modify-public was requested. Keep the blend so a retry works.
-                        return DeleteOutcome(blend.playlistName, removedFromSpotify = false, spotifyStatus = status, needsRelogin = true)
-                    }
                 }
             }
         }

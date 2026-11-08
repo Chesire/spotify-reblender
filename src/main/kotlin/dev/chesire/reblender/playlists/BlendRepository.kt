@@ -1,52 +1,26 @@
 package dev.chesire.reblender.playlists
 
-import dev.chesire.reblender.blend.SharedMode
-import dev.chesire.reblender.blend.TimeRange
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.playlists.models.Blend
+import dev.chesire.reblender.playlists.models.BlendTrack
 import dev.chesire.reblender.security.SafeUrls
 import dev.chesire.reblender.spotify.SpotifyClient
+import java.sql.Timestamp
+import java.time.Instant
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
-import java.sql.Timestamp
-import java.time.Instant
-
-/** A playlist this app manages: who's in it and how to rebuild it. */
-data class Blend(
-    val playlistId: String,
-    val playlistName: String,
-    val playlistUrl: String,
-    val ownerId: String,
-    /** Everyone in the blend, owner first. One entry means a solo playlist. */
-    val memberIds: List<String>,
-    val timeRange: TimeRange,
-    val size: Int,
-    val sharedMode: SharedMode,
-    val trackCount: Int,
-    val createdAt: Instant,
-    val updatedAt: Instant,
-)
-
-/** One song in the last build of a blend, and who it came from (more than one contributor = shared). */
-data class BlendTrack(
-    val trackId: String,
-    val uri: String,
-    val name: String,
-    val artists: List<String>,
-    val contributors: List<String>,
-    val imageUrl: String? = null,
-)
 
 @Repository
 class BlendRepository(private val jdbc: JdbcClient) {
 
     private val rowMapper = RowMapper { rs, _ ->
-        val playlistId = rs.getString("playlist_id")
         Blend(
-            playlistId = playlistId,
+            playlistId = rs.getString("playlist_id"),
             playlistName = rs.getString("playlist_name"),
-            // S5: re-checked on read so rows written before the https-only rule can't render an unsafe link.
-            playlistUrl = SafeUrls.httpsOrNull(rs.getString("playlist_url")) ?: SpotifyClient.playlistUrl(playlistId),
+            playlistUrl = rs.getString("playlist_url"),
             ownerId = rs.getString("owner_id"),
             memberIds = emptyList(),
             timeRange = TimeRange.valueOf(rs.getString("time_range")),
@@ -145,7 +119,7 @@ class BlendRepository(private val jdbc: JdbcClient) {
                     name = rs.getString("track_name"),
                     artists = rs.getString("artists").split(SEPARATOR).filter { it.isNotEmpty() },
                     contributors = rs.getString("contributors").split(SEPARATOR).filter { it.isNotEmpty() },
-                    imageUrl = SafeUrls.httpsOrNull(rs.getString("image_url")),
+                    imageUrl = rs.getString("image_url"),
                 )
             }
             .list()

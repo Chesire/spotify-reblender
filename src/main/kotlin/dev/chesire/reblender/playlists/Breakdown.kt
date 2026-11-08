@@ -1,6 +1,8 @@
 package dev.chesire.reblender.playlists
 
-import dev.chesire.reblender.users.AppUser
+import dev.chesire.reblender.playlists.models.Blend
+import dev.chesire.reblender.playlists.models.BlendTrack
+import dev.chesire.reblender.users.models.AppUser
 
 /** A person in a blend as shown on the breakdown page. */
 data class MemberView(
@@ -25,7 +27,6 @@ data class TrackView(
     val name: String,
     val artists: String,
     val contributors: List<MemberView>,
-    /** Album cover, or null for songs stored before covers were recorded. */
     val imageUrl: String? = null,
 ) {
     val isShared: Boolean get() = contributors.size > 1

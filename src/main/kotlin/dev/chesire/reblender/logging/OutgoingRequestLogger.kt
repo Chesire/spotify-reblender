@@ -1,5 +1,8 @@
 package dev.chesire.reblender.logging
 
+import java.io.ByteArrayInputStream
+import java.io.IOException
+import java.io.InputStream
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpRequest
@@ -7,9 +10,6 @@ import org.springframework.http.HttpStatusCode
 import org.springframework.http.client.ClientHttpRequestExecution
 import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.http.client.ClientHttpResponse
-import java.io.ByteArrayInputStream
-import java.io.IOException
-import java.io.InputStream
 
 /**
  * Logs every call the app makes to Spotify (Web API, token endpoint, user info) and its result:

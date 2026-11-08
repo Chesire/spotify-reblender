@@ -1,10 +1,10 @@
 package dev.chesire.reblender.spotify
 
+import org.slf4j.LoggerFactory
 import org.springframework.security.oauth2.client.ClientAuthorizationException
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.stereotype.Component
-import org.slf4j.LoggerFactory
 
 /** Thrown when a user has no usable token (never logged in, revoked, or the 6-month refresh token expired). */
 class ReloginRequiredException(val spotifyId: String) :

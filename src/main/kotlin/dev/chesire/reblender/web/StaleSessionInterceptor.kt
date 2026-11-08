@@ -15,7 +15,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 /**
- * S7: a logged-in session is only honoured while the app still holds that user's record and stored Spotify login.
+ * A logged-in session is only honoured while the app still holds that user's record and stored Spotify login.
  * If either is gone ("Forget me" from another browser, tokens deleted, database reset), the session is ended
  * instead of silently recreating the user from whatever the old session remembers.
  */

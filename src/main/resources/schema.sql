@@ -16,13 +16,13 @@ CREATE TABLE IF NOT EXISTS oauth2_authorized_client (
 
 -- Everyone who has logged in. Max 5 because of Spotify Development Mode.
 CREATE TABLE IF NOT EXISTS app_user (
-    spotify_id    VARCHAR(200) PRIMARY KEY,
-    display_name  VARCHAR(300) NOT NULL,
-    last_login_at TIMESTAMP    NOT NULL
+    spotify_id     VARCHAR(200)  PRIMARY KEY,
+    display_name   VARCHAR(300)  NOT NULL,
+    avatar_url     VARCHAR(1000),
+    -- Whether other people may include this user (and so read their top tracks) in blends.
+    allow_blending BOOLEAN       DEFAULT TRUE NOT NULL,
+    last_login_at  TIMESTAMP     NOT NULL
 );
-ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(1000);
--- Whether other people may include this user (and so read their top tracks) in blends. On by default.
-ALTER TABLE app_user ADD COLUMN IF NOT EXISTS allow_blending BOOLEAN DEFAULT TRUE NOT NULL;
 
 -- One row per playlist the app manages.
 CREATE TABLE IF NOT EXISTS blend (
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS blend_track (
     track_name   VARCHAR(500)  NOT NULL,
     artists      VARCHAR(1000) NOT NULL,
     contributors VARCHAR(1100) NOT NULL,
+    image_url    VARCHAR(1000),
     PRIMARY KEY (playlist_id, track_order),
     FOREIGN KEY (playlist_id) REFERENCES blend (playlist_id) ON DELETE CASCADE
 );
-ALTER TABLE blend_track ADD COLUMN IF NOT EXISTS image_url VARCHAR(1000);

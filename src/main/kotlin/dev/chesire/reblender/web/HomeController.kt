@@ -1,17 +1,19 @@
 package dev.chesire.reblender.web
 
-import dev.chesire.reblender.blend.SharedMode
-import dev.chesire.reblender.blend.TimeRange
 import dev.chesire.reblender.blend.BlendEngine
-import dev.chesire.reblender.playlists.Blend
-import dev.chesire.reblender.playlists.BlendOutcome
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.playlists.PlaylistService
+import dev.chesire.reblender.playlists.models.Blend
+import dev.chesire.reblender.playlists.models.BlendOutcome
 import dev.chesire.reblender.security.SpotifyIds
 import dev.chesire.reblender.spotify.ReloginRequiredException
 import dev.chesire.reblender.users.AccountService
 import dev.chesire.reblender.users.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -25,8 +27,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.client.RestClientResponseException
 import org.springframework.web.servlet.mvc.support.RedirectAttributes
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Controller
 class HomeController(
@@ -44,7 +44,7 @@ class HomeController(
     ): String {
         if (principal == null) {
             model.addAttribute("loggedIn", false)
-            // Set by StaleSessionInterceptor when a session outlived the user's stored login (S7).
+            // Set by StaleSessionInterceptor when a session outlived the user's stored login.
             model.addAttribute("expired", expired != null)
             return "index"
         }
@@ -135,8 +135,6 @@ class HomeController(
             val outcome = playlists.delete(principal.name, playlistId, removeFromSpotify)
             val name = "\"${outcome.playlistName}\""
             when {
-                outcome.needsRelogin -> "Your Spotify login doesn't include permission to delete playlists yet. " +
-                    "Log out, log in again (Spotify will ask you to approve it), then delete $name again."
                 !removeFromSpotify -> "Stopped managing $name. It's still in your Spotify library."
                 outcome.removedFromSpotify -> "Deleted $name from the app and your Spotify library."
                 else -> "Removed $name from the app, but Spotify wouldn't let the app delete it " +
@@ -146,7 +144,7 @@ class HomeController(
         return "redirect:/"
     }
 
-    /** S1: whether other people may include this user (and so read their top tracks) in blends. */
+    /** Whether other people may include this user (and so read their top tracks) in blends. */
     @PostMapping("/account/blending")
     fun setBlending(
         @AuthenticationPrincipal principal: OAuth2User,
@@ -194,7 +192,7 @@ class HomeController(
         return " That's fewer than the ${blend.size} you asked for: $why (usable top tracks: $counts)."
     }
 
-    /** S9: playlist IDs from the URL must look like Spotify IDs before they reach the database, Spotify or a redirect. */
+    /** Playlist IDs from the URL must look like Spotify IDs before they reach the database, Spotify or a redirect. */
     private fun validPlaylistId(playlistId: String, redirect: RedirectAttributes): Boolean {
         if (SpotifyIds.isPlaylistId(playlistId)) return true
         redirect.addFlashAttribute("error", "That isn't a valid playlist.")

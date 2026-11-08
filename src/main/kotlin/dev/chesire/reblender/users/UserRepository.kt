@@ -1,21 +1,12 @@
 package dev.chesire.reblender.users
 
 import dev.chesire.reblender.security.SafeUrls
-
+import dev.chesire.reblender.users.models.AppUser
+import java.sql.Timestamp
+import java.time.Instant
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
-import java.sql.Timestamp
-import java.time.Instant
-
-data class AppUser(
-    val spotifyId: String,
-    val displayName: String,
-    /** Spotify profile picture, if the user has one. */
-    val avatarUrl: String? = null,
-    /** Whether others may include this user (and so read their top tracks) in blends. */
-    val allowBlending: Boolean = true,
-)
 
 @Repository
 class UserRepository(private val jdbc: JdbcClient) {
@@ -24,7 +15,7 @@ class UserRepository(private val jdbc: JdbcClient) {
         AppUser(
             spotifyId = rs.getString("spotify_id"),
             displayName = rs.getString("display_name"),
-            avatarUrl = SafeUrls.httpsOrNull(rs.getString("avatar_url")),
+            avatarUrl = rs.getString("avatar_url"),
             allowBlending = rs.getBoolean("allow_blending"),
         )
     }

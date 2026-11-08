@@ -8,6 +8,7 @@ import dev.chesire.reblender.users.LoginSuccessHandler
 import dev.chesire.reblender.users.UserRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.converter.FormHttpMessageConverter
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
@@ -15,20 +16,19 @@ import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2A
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
-import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter
-import org.springframework.http.converter.FormHttpMessageConverter
-import org.springframework.web.client.RestClient
-import org.springframework.web.client.RestTemplate
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy
 import org.springframework.security.web.header.writers.StaticHeadersWriter
+import org.springframework.web.client.RestClient
+import org.springframework.web.client.RestTemplate
 
 @Configuration
 class SecurityConfig {
@@ -50,11 +50,9 @@ class SecurityConfig {
             oauth2Login {
                 loginPage = "/"
                 authenticationSuccessHandler = LoginSuccessHandler(users)
-                // S6: PKCE on the authorization-code flow, as the OAuth 2.0 Security BCP recommends for all clients.
                 authorizationEndpoint {
                     authorizationRequestResolver = pkceAuthorizationRequestResolver(clientRegistrations)
                 }
-                // Same clients Spring uses by default, plus request logging (no headers or bodies).
                 tokenEndpoint {
                     accessTokenResponseClient = RestClientAuthorizationCodeTokenResponseClient().apply {
                         setRestClient(loggingTokenRestClient())
@@ -67,7 +65,6 @@ class SecurityConfig {
             logout {
                 logoutSuccessUrl = "/"
             }
-            // S4: browser-enforced limits on what pages can load and send.
             headers {
                 contentSecurityPolicy {
                     policyDirectives = CONTENT_SECURITY_POLICY

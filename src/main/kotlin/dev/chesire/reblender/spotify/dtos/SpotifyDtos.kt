@@ -1,17 +1,17 @@
-package dev.chesire.reblender.spotify
+package dev.chesire.reblender.spotify.dtos
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// Only the fields we use. Everything has a default so Spotify's 2026 field removals/renames don't break parsing.
+// Only the fields we use. Everything has a default so missing or renamed fields don't break parsing.
 
 @Serializable
-internal data class TopTracksResponse(
+data class TopTracksResponse(
     val items: List<TrackDto> = emptyList(),
 )
 
 @Serializable
-internal data class TrackDto(
+data class TrackDto(
     val id: String? = null,
     val uri: String? = null,
     val name: String = "",
@@ -21,40 +21,40 @@ internal data class TrackDto(
 )
 
 @Serializable
-internal data class AlbumDto(
+data class AlbumDto(
     val images: List<ImageDto> = emptyList(),
 )
 
 @Serializable
-internal data class ImageDto(
+data class ImageDto(
     val url: String? = null,
     val height: Int? = null,
 )
 
 @Serializable
-internal data class ArtistDto(
+data class ArtistDto(
     val name: String = "",
 )
 
 @Serializable
-internal data class CreatePlaylistRequest(
+data class CreatePlaylistRequest(
     val name: String,
     val description: String,
     @SerialName("public") val isPublic: Boolean,
 )
 
 @Serializable
-internal data class PlaylistDto(
+data class PlaylistDto(
     val id: String,
     @SerialName("external_urls") val externalUrls: ExternalUrls = ExternalUrls(),
 )
 
 @Serializable
-internal data class ExternalUrls(
+data class ExternalUrls(
     val spotify: String = "",
 )
 
 @Serializable
-internal data class ReplaceItemsRequest(
+data class ReplaceItemsRequest(
     val uris: List<String>,
 )

@@ -7,7 +7,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-/** Thrown when stored ciphertext can't be decrypted (wrong key, tampering, or legacy plaintext). */
+/** Thrown when stored ciphertext can't be decrypted (wrong key or tampering). */
 class TokenDecryptionException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 /**

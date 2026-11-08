@@ -1,8 +1,10 @@
 package dev.chesire.reblender.playlists
 
-import dev.chesire.reblender.blend.SharedMode
-import dev.chesire.reblender.blend.TimeRange
-import dev.chesire.reblender.users.AppUser
+import dev.chesire.reblender.blend.models.SharedMode
+import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.playlists.models.Blend
+import dev.chesire.reblender.playlists.models.BlendTrack
+import dev.chesire.reblender.users.models.AppUser
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
