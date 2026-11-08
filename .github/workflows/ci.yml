@@ -28,6 +28,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           cache-provider: basic
+          # Caches are only written from the default branch by default, and main has no runs yet, so every
+          # PR run downloaded Gradle afresh (and failed when GitHub's release downloads returned 504s).
+          # A branch's cache is only visible to that branch and ones created from it.
+          cache-read-only: false
 
       - name: Build and run tests
         run: ./gradlew build --no-daemon
