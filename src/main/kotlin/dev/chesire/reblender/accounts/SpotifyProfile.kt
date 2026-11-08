@@ -1,7 +1,7 @@
 package dev.chesire.reblender.accounts
 
 import dev.chesire.reblender.accounts.models.AppUser
-import dev.chesire.reblender.spotify.SpotifyImages
+import dev.chesire.reblender.integrations.spotify.SpotifyImages
 import org.springframework.security.oauth2.core.user.OAuth2User
 
 /** Turns the Spotify `/me` profile (the OAuth2 user attributes) into an [AppUser]. */

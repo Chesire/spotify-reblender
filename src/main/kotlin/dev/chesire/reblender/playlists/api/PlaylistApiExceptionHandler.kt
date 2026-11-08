@@ -1,6 +1,6 @@
 package dev.chesire.reblender.playlists.api
 
-import dev.chesire.reblender.spotify.ReloginRequiredException
+import dev.chesire.reblender.integrations.spotify.ReloginRequiredException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail

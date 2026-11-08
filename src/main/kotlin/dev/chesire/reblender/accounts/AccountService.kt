@@ -4,8 +4,8 @@ import dev.chesire.reblender.accounts.data.UserEntity
 import dev.chesire.reblender.accounts.data.UserRepository
 import dev.chesire.reblender.accounts.data.toModel
 import dev.chesire.reblender.accounts.models.AppUser
+import dev.chesire.reblender.integrations.spotify.SpotifyTokens
 import dev.chesire.reblender.platform.security.SafeUrls
-import dev.chesire.reblender.spotify.SpotifyTokens
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient

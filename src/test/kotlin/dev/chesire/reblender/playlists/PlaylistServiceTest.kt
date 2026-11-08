@@ -5,12 +5,12 @@ import dev.chesire.reblender.accounts.models.AppUser
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.blend.models.Track
+import dev.chesire.reblender.integrations.spotify.SpotifyClient
+import dev.chesire.reblender.integrations.spotify.models.CreatedPlaylist
 import dev.chesire.reblender.playlists.data.BlendEntity
 import dev.chesire.reblender.playlists.data.BlendRepository
 import dev.chesire.reblender.playlists.data.toEntity
 import dev.chesire.reblender.playlists.models.Blend
-import dev.chesire.reblender.spotify.SpotifyClient
-import dev.chesire.reblender.spotify.models.CreatedPlaylist
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockingDetails

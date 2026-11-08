@@ -1,4 +1,4 @@
-package dev.chesire.reblender.spotify
+package dev.chesire.reblender.integrations.spotify
 
 import org.slf4j.LoggerFactory
 import org.springframework.security.oauth2.client.ClientAuthorizationException

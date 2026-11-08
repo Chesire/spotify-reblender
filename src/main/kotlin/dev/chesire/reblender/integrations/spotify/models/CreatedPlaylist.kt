@@ -1,4 +1,4 @@
-package dev.chesire.reblender.spotify.models
+package dev.chesire.reblender.integrations.spotify.models
 
 data class CreatedPlaylist(
     val id: String,

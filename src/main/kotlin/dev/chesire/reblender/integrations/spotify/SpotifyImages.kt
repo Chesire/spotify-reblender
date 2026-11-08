@@ -1,4 +1,4 @@
-package dev.chesire.reblender.spotify
+package dev.chesire.reblender.integrations.spotify
 
 import dev.chesire.reblender.platform.security.SafeUrls
 

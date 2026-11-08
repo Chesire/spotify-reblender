@@ -1,4 +1,4 @@
-package dev.chesire.reblender.spotify.dtos
+package dev.chesire.reblender.integrations.spotify.dtos
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

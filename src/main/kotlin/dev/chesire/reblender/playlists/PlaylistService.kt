@@ -7,6 +7,7 @@ import dev.chesire.reblender.blend.models.BlendedTrack
 import dev.chesire.reblender.blend.models.Participant
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.integrations.spotify.SpotifyClient
 import dev.chesire.reblender.platform.security.SpotifyIds
 import dev.chesire.reblender.playlists.data.BlendEntity
 import dev.chesire.reblender.playlists.data.BlendRepository
@@ -18,7 +19,6 @@ import dev.chesire.reblender.playlists.models.BlendDetails
 import dev.chesire.reblender.playlists.models.BlendOutcome
 import dev.chesire.reblender.playlists.models.BlendTrack
 import dev.chesire.reblender.playlists.models.DeleteOutcome
-import dev.chesire.reblender.spotify.SpotifyClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientResponseException

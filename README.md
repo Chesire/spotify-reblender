@@ -162,7 +162,7 @@ The code is packaged by feature:
 | `blend` | The blend engine and its models. Plain Kotlin, no Spring. |
 | `playlists` | `PlaylistService` and playlist naming. `data/`: Spring Data JDBC repository. `web/`: pages, view models and wording. `api/`: JSON API. |
 | `accounts` | Users, login handling, the blending opt-out and "Forget me". Same `data/`, `web/` and `api/` split. |
-| `spotify` | Spotify Web API client, token access and JSON DTOs. |
+| `integrations/spotify` | The connection to Spotify: Web API client, token access and JSON DTOs. Anything else the app talks to goes under `integrations/` too. |
 | `platform` | Cross-cutting security (headers, PKCE, token encryption), logging, config and data support. |
 
 ### JSON API

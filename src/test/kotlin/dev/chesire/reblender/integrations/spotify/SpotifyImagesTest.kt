@@ -1,4 +1,4 @@
-package dev.chesire.reblender.spotify
+package dev.chesire.reblender.integrations.spotify
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

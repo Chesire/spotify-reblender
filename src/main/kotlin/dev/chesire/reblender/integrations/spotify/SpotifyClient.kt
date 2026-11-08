@@ -1,17 +1,17 @@
-package dev.chesire.reblender.spotify
+package dev.chesire.reblender.integrations.spotify
 
 import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.blend.models.Track
+import dev.chesire.reblender.integrations.spotify.dtos.ArtistDto
+import dev.chesire.reblender.integrations.spotify.dtos.CreatePlaylistRequest
+import dev.chesire.reblender.integrations.spotify.dtos.PlaylistDto
+import dev.chesire.reblender.integrations.spotify.dtos.ReplaceItemsRequest
+import dev.chesire.reblender.integrations.spotify.dtos.TopTracksResponse
+import dev.chesire.reblender.integrations.spotify.models.CreatedPlaylist
 import dev.chesire.reblender.platform.config.ReblenderProperties
 import dev.chesire.reblender.platform.logging.OutgoingRequestLogger
 import dev.chesire.reblender.platform.security.SafeUrls
 import dev.chesire.reblender.platform.security.SpotifyIds
-import dev.chesire.reblender.spotify.dtos.ArtistDto
-import dev.chesire.reblender.spotify.dtos.CreatePlaylistRequest
-import dev.chesire.reblender.spotify.dtos.PlaylistDto
-import dev.chesire.reblender.spotify.dtos.ReplaceItemsRequest
-import dev.chesire.reblender.spotify.dtos.TopTracksResponse
-import dev.chesire.reblender.spotify.models.CreatedPlaylist
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType

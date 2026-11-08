@@ -4,10 +4,10 @@ import dev.chesire.reblender.accounts.AccountService
 import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.integrations.spotify.ReloginRequiredException
 import dev.chesire.reblender.platform.security.SpotifyIds
 import dev.chesire.reblender.playlists.PlaylistNaming
 import dev.chesire.reblender.playlists.PlaylistService
-import dev.chesire.reblender.spotify.ReloginRequiredException
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.annotation.AuthenticationPrincipal

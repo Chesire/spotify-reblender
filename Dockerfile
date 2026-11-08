@@ -1,10 +1,10 @@
-FROM eclipse-temurin:21-jdk AS build
+# Gradle comes preinstalled in the build image (same version as the wrapper), so the build doesn't download it.
+FROM gradle:8.14.3-jdk21 AS build
 WORKDIR /workspace
-COPY gradlew settings.gradle.kts build.gradle.kts ./
-COPY gradle gradle
-RUN ./gradlew --no-daemon dependencies > /dev/null
+COPY settings.gradle.kts build.gradle.kts ./
+RUN gradle --no-daemon dependencies > /dev/null
 COPY src src
-RUN ./gradlew --no-daemon bootJar -x test
+RUN gradle --no-daemon bootJar -x test
 
 FROM eclipse-temurin:21-jre
 # Run as an unprivileged user; only it can read the database (and the encrypted tokens) in /data.
