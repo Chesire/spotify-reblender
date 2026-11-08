@@ -37,14 +37,13 @@ object BlendEngine {
      * The fraction of the playlist shared songs may take, by group size, as (numerator, denominator).
      * Kept as exact fractions with integer maths: a rounded 0.33 would give 2 people a size-3 playlist no shared song.
      */
-    fun sharedShare(participantCount: Int): Pair<Int, Int> =
-        when (participantCount) {
-            1 -> 0 to 1
-            2 -> 1 to 3
-            3 -> 1 to 2
-            4 -> 2 to 3
-            else -> 4 to 5
-        }
+    fun sharedShare(participantCount: Int): Pair<Int, Int> = when (participantCount) {
+        1 -> 0 to 1
+        2 -> 1 to 3
+        3 -> 1 to 2
+        4 -> 2 to 3
+        else -> 4 to 5
+    }
 
     /** How many shared songs [SharedMode.CAPPED] allows in a playlist of [size]: `floor(size × share)`. */
     fun sharedBudget(
@@ -83,19 +82,19 @@ object BlendEngine {
 
         // Step 1.
         val shared = holders.filterValues { it.size >= 2 }.keys.sortedWith(
-                compareByDescending<String> { holders.getValue(it).size }
-                    .thenBy { holders.getValue(it).map { (_, rank) -> rank }.average() }
-                    .thenBy { holders.getValue(it).minOf { (_, rank) -> rank } }
-                    .thenBy { it },
-            )
+            compareByDescending<String> { holders.getValue(it).size }
+                .thenBy { holders.getValue(it).map { (_, rank) -> rank }.average() }
+                .thenBy { holders.getValue(it).minOf { (_, rank) -> rank } }
+                .thenBy { it },
+        )
         val solo = people.map { person -> person.tracks.filter { holders.getValue(it.id).size == 1 } }
 
         // Steps 2 and 3.
         val budget = when {
-                n == 1 -> 0
-                sharedMode == SharedMode.FILL -> size
-                else -> sharedBudget(n, size)
-            }
+            n == 1 -> 0
+            sharedMode == SharedMode.FILL -> size
+            else -> sharedBudget(n, size)
+        }
         var sharedCount = minOf(shared.size, budget)
         var remaining = size - sharedCount
         val uneven = remaining % n
@@ -112,11 +111,11 @@ object BlendEngine {
 
         // Step 5.
         val sharedPicks = shared.take(sharedCount).map { id ->
-                BlendedTrack(trackById.getValue(id), holders.getValue(id).mapTo(LinkedHashSet()) { people[it.first].id })
-            }
+            BlendedTrack(trackById.getValue(id), holders.getValue(id).mapTo(LinkedHashSet()) { people[it.first].id })
+        }
         val soloPicks = people.mapIndexed { i, person ->
-                solo[i].take(quota).map { BlendedTrack(it, setOf(person.id)) }
-            }
+            solo[i].take(quota).map { BlendedTrack(it, setOf(person.id)) }
+        }
         return interleave(listOf(sharedPicks) + soloPicks)
     }
 

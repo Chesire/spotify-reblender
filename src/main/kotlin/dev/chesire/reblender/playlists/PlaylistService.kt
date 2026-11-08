@@ -74,18 +74,18 @@ class PlaylistService(
 
         val now = Instant.now()
         val blend = Blend(
-                playlistId = playlist.id,
-                playlistName = name,
-                playlistUrl = playlist.url,
-                ownerId = ownerId,
-                memberIds = memberIds,
-                timeRange = timeRange,
-                size = size,
-                sharedMode = sharedMode,
-                trackCount = blended.size,
-                createdAt = now,
-                updatedAt = now,
-            )
+            playlistId = playlist.id,
+            playlistName = name,
+            playlistUrl = playlist.url,
+            ownerId = ownerId,
+            memberIds = memberIds,
+            timeRange = timeRange,
+            size = size,
+            sharedMode = sharedMode,
+            trackCount = blended.size,
+            createdAt = now,
+            updatedAt = now,
+        )
         blends.insert(blend.toEntity(blended.map(::toStored)))
         return BlendOutcome(blend, usable)
     }
@@ -157,8 +157,8 @@ class PlaylistService(
 
         val owner = accounts.find(ownerId) ?: throw IllegalArgumentException("Unknown user. Log out and in again.")
         val others = partners.map { id ->
-                accounts.find(id) ?: throw IllegalArgumentException("Someone you picked hasn't logged in yet.")
-            }
+            accounts.find(id) ?: throw IllegalArgumentException("Someone you picked hasn't logged in yet.")
+        }
         // Enforced here, not just by hiding people in the form: a crafted request can't include someone who opted out.
         others.firstOrNull { !it.allowBlending }?.let {
             throw IllegalArgumentException("${it.displayName} has turned off being included in blends.")
@@ -176,13 +176,13 @@ class PlaylistService(
     }
 
     private fun toStored(track: BlendedTrack) = BlendTrack(
-            trackId = track.track.id,
-            uri = track.track.uri,
-            name = track.track.name,
-            artists = track.track.artists,
-            contributors = track.contributors.toList(),
-            imageUrl = track.track.imageUrl,
-        )
+        trackId = track.track.id,
+        uri = track.track.uri,
+        name = track.track.name,
+        artists = track.track.artists,
+        contributors = track.contributors.toList(),
+        imageUrl = track.track.imageUrl,
+    )
 
     private fun buildBlend(
         memberIds: List<String>,
@@ -192,7 +192,7 @@ class PlaylistService(
     ): Pair<List<BlendedTrack>, Map<String, Int>> {
         // Others first: if someone's login has expired we fail before touching the owner's playlist.
         val tracksById = (memberIds.drop(1) + memberIds.first())
-                .associateWith { spotify.topTracks(it, timeRange) }
+            .associateWith { spotify.topTracks(it, timeRange) }
         val participants = memberIds.map { Participant(it, tracksById.getValue(it)) }
         val blended = BlendEngine.blend(participants, size, sharedMode)
         require(blended.isNotEmpty()) { "Nobody in this blend has any top tracks for that time range yet." }

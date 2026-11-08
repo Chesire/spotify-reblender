@@ -13,18 +13,18 @@ import kotlin.test.assertTrue
 
 class BreakdownTest {
     private val blend = Blend(
-            playlistId = "p1",
-            playlistName = "A & B - Recent favourites",
-            playlistUrl = "https://open.spotify.com/playlist/p1",
-            ownerId = "a",
-            memberIds = listOf("a", "b"),
-            timeRange = TimeRange.RECENT,
-            size = 4,
-            sharedMode = SharedMode.CAPPED,
-            trackCount = 4,
-            createdAt = Instant.EPOCH,
-            updatedAt = Instant.EPOCH,
-        )
+        playlistId = "p1",
+        playlistName = "A & B - Recent favourites",
+        playlistUrl = "https://open.spotify.com/playlist/p1",
+        ownerId = "a",
+        memberIds = listOf("a", "b"),
+        timeRange = TimeRange.RECENT,
+        size = 4,
+        sharedMode = SharedMode.CAPPED,
+        trackCount = 4,
+        createdAt = Instant.EPOCH,
+        updatedAt = Instant.EPOCH,
+    )
     private val users = listOf(AppUser("a", "Alice Smith", "https://img/a"), AppUser("b", "Bob"))
 
     private fun track(

@@ -52,50 +52,50 @@ data class BlendTrackEntity(
 private const val SEPARATOR = "\u001F"
 
 fun BlendEntity.toModel() = Blend(
-        playlistId = playlistId,
-        playlistName = playlistName,
-        playlistUrl = playlistUrl,
-        ownerId = ownerId,
-        memberIds = members.map { it.spotifyId },
-        timeRange = timeRange,
-        size = size,
-        sharedMode = sharedMode,
-        trackCount = trackCount,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-    )
+    playlistId = playlistId,
+    playlistName = playlistName,
+    playlistUrl = playlistUrl,
+    ownerId = ownerId,
+    memberIds = members.map { it.spotifyId },
+    timeRange = timeRange,
+    size = size,
+    sharedMode = sharedMode,
+    trackCount = trackCount,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
 
 fun BlendEntity.tracksToModel() = tracks.map {
-        BlendTrack(
-            trackId = it.trackId,
-            uri = it.trackUri,
-            name = it.trackName,
-            artists = it.artists.split(SEPARATOR).filter(String::isNotEmpty),
-            contributors = it.contributors.split(SEPARATOR).filter(String::isNotEmpty),
-            imageUrl = it.imageUrl,
-        )
-    }
+    BlendTrack(
+        trackId = it.trackId,
+        uri = it.trackUri,
+        name = it.trackName,
+        artists = it.artists.split(SEPARATOR).filter(String::isNotEmpty),
+        contributors = it.contributors.split(SEPARATOR).filter(String::isNotEmpty),
+        imageUrl = it.imageUrl,
+    )
+}
 
 fun Blend.toEntity(tracks: List<BlendTrack>) = BlendEntity(
-        playlistId = playlistId,
-        playlistName = playlistName,
-        playlistUrl = playlistUrl,
-        ownerId = ownerId,
-        timeRange = timeRange,
-        size = size,
-        sharedMode = sharedMode,
-        trackCount = trackCount,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        members = memberIds.map(::BlendMemberEntity),
-        tracks = tracks.map(BlendTrack::toEntity),
-    )
+    playlistId = playlistId,
+    playlistName = playlistName,
+    playlistUrl = playlistUrl,
+    ownerId = ownerId,
+    timeRange = timeRange,
+    size = size,
+    sharedMode = sharedMode,
+    trackCount = trackCount,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    members = memberIds.map(::BlendMemberEntity),
+    tracks = tracks.map(BlendTrack::toEntity),
+)
 
 private fun BlendTrack.toEntity() = BlendTrackEntity(
-        trackId = trackId,
-        trackUri = uri,
-        trackName = name.take(500),
-        artists = artists.joinToString(SEPARATOR).take(1000),
-        contributors = contributors.joinToString(SEPARATOR),
-        imageUrl = SafeUrls.httpsOrNull(imageUrl),
-    )
+    trackId = trackId,
+    trackUri = uri,
+    trackName = name.take(500),
+    artists = artists.joinToString(SEPARATOR).take(1000),
+    contributors = contributors.joinToString(SEPARATOR),
+    imageUrl = SafeUrls.httpsOrNull(imageUrl),
+)

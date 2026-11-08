@@ -34,10 +34,10 @@ object SessionCookiePolicy {
         override: String?,
         baseUrl: String?,
     ): Boolean = when (override?.trim()?.lowercase()) {
-            "true" -> true
-            "false" -> false
-            else -> isHttps(baseUrl)
-        }
+        "true" -> true
+        "false" -> false
+        else -> isHttps(baseUrl)
+    }
 
     fun isHttps(baseUrl: String?): Boolean = baseUrl?.trim()?.startsWith("https://", ignoreCase = true) == true
 }

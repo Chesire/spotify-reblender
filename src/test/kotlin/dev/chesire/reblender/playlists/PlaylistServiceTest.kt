@@ -43,18 +43,18 @@ class PlaylistServiceTest {
     }
 
     private fun stored(vararg memberIds: String): BlendEntity = Blend(
-            playlistId = playlistId,
-            playlistName = "A playlist",
-            playlistUrl = "https://open.spotify.com/playlist/$playlistId",
-            ownerId = "owner",
-            memberIds = memberIds.toList(),
-            timeRange = TimeRange.RECENT,
-            size = 10,
-            sharedMode = SharedMode.CAPPED,
-            trackCount = 10,
-            createdAt = Instant.EPOCH,
-            updatedAt = Instant.EPOCH,
-        ).toEntity(emptyList()).also { `when`(blends.findByPlaylistIdAndOwnerId(playlistId, "owner")).thenReturn(it) }
+        playlistId = playlistId,
+        playlistName = "A playlist",
+        playlistUrl = "https://open.spotify.com/playlist/$playlistId",
+        ownerId = "owner",
+        memberIds = memberIds.toList(),
+        timeRange = TimeRange.RECENT,
+        size = 10,
+        sharedMode = SharedMode.CAPPED,
+        trackCount = 10,
+        createdAt = Instant.EPOCH,
+        updatedAt = Instant.EPOCH,
+    ).toEntity(emptyList()).also { `when`(blends.findByPlaylistIdAndOwnerId(playlistId, "owner")).thenReturn(it) }
 
     private fun tracks(prefix: String) =
         (1..10).map { Track("$prefix$it".padEnd(22, 'x'), "spotify:track:$prefix$it".padEnd(36, 'x'), "$prefix$it", listOf("a")) }
@@ -62,8 +62,8 @@ class PlaylistServiceTest {
     @Test
     fun `cannot create a blend with someone who opted out`() {
         val error = assertFailsWith<IllegalArgumentException> {
-                service.create("owner", listOf("quiet"), TimeRange.RECENT, 10, SharedMode.CAPPED)
-            }
+            service.create("owner", listOf("quiet"), TimeRange.RECENT, 10, SharedMode.CAPPED)
+        }
         assertContains(error.message.orEmpty(), "Quiet Person")
         verifyNoInteractions(spotify)
     }
@@ -91,10 +91,10 @@ class PlaylistServiceTest {
 
         assertEquals(listOf("owner", "friend"), outcome.blend.memberIds)
         val saved = mockingDetails(blends)
-                .invocations
-                .single { it.method.name == "insert" }
-                .arguments
-                .single() as BlendEntity
+            .invocations
+            .single { it.method.name == "insert" }
+            .arguments
+            .single() as BlendEntity
         assertEquals(listOf("owner", "friend"), saved.members.map { it.spotifyId })
         assertEquals(10, saved.tracks.size)
     }

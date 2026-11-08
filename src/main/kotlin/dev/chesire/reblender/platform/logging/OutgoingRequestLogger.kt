@@ -32,16 +32,16 @@ class OutgoingRequestLogger : ClientHttpRequestInterceptor {
         val uri = request.uri
         val target = "${uri.scheme}://${uri.authority}${LogRedaction.target(uri.rawPath ?: "", uri.rawQuery)}"
         val response = try {
-                execution.execute(request, body)
-            } catch (e: IOException) {
-                log.warn("OUT {} {} -> failed: {} ({} ms)", request.method, target, e.javaClass.simpleName, elapsedMs(start))
-                throw e
-            }
+            execution.execute(request, body)
+        } catch (e: IOException) {
+            log.warn("OUT {} {} -> failed: {} ({} ms)", request.method, target, e.javaClass.simpleName, elapsedMs(start))
+            throw e
+        }
         val status = response.statusCode
         if (!status.isError) {
             val size = response.headers.contentLength
-                    .takeIf { it >= 0 }
-                    ?.let { ", $it bytes" } ?: ""
+                .takeIf { it >= 0 }
+                ?.let { ", $it bytes" } ?: ""
             log.info("OUT {} {} -> {} ({} ms{})", request.method, target, status.value(), elapsedMs(start), size)
             return response
         }

@@ -45,10 +45,10 @@ class IncomingRequestLogFilter : OncePerRequestFilter() {
     /** The logged-in Spotify user, read from the session after the request (the security context is cleared by then). */
     private fun user(request: HttpServletRequest): String {
         val context = runCatching {
-                request
-                    .getSession(false)
-                    ?.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) as? SecurityContext
-            }.getOrNull() // the session may have just been invalidated (logout)
+            request
+                .getSession(false)
+                ?.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY) as? SecurityContext
+        }.getOrNull() // the session may have just been invalidated (logout)
         return context?.authentication?.name?.let { " user=$it" } ?: ""
     }
 

@@ -24,18 +24,18 @@ data class PlaylistResponse(
 ) {
     companion object {
         fun of(blend: Blend) = PlaylistResponse(
-                id = blend.playlistId,
-                name = blend.playlistName,
-                url = blend.playlistUrl,
-                ownerId = blend.ownerId,
-                memberIds = blend.memberIds,
-                timeRange = blend.timeRange,
-                size = blend.size,
-                sharedMode = blend.sharedMode,
-                trackCount = blend.trackCount,
-                createdAt = blend.createdAt,
-                updatedAt = blend.updatedAt,
-            )
+            id = blend.playlistId,
+            name = blend.playlistName,
+            url = blend.playlistUrl,
+            ownerId = blend.ownerId,
+            memberIds = blend.memberIds,
+            timeRange = blend.timeRange,
+            size = blend.size,
+            sharedMode = blend.sharedMode,
+            trackCount = blend.trackCount,
+            createdAt = blend.createdAt,
+            updatedAt = blend.updatedAt,
+        )
     }
 }
 
@@ -56,12 +56,12 @@ data class PlaylistDetailsResponse(
 ) {
     companion object {
         fun of(details: BlendDetails) = PlaylistDetailsResponse(
-                playlist = PlaylistResponse.of(details.blend),
-                members = details.members.map { MemberResponse(it.spotifyId, it.displayName, it.avatarUrl) },
-                tracks = details.tracks.map {
-                        TrackResponse(it.trackId, it.uri, it.name, it.artists, it.contributors, it.imageUrl)
-                    },
-            )
+            playlist = PlaylistResponse.of(details.blend),
+            members = details.members.map { MemberResponse(it.spotifyId, it.displayName, it.avatarUrl) },
+            tracks = details.tracks.map {
+                TrackResponse(it.trackId, it.uri, it.name, it.artists, it.contributors, it.imageUrl)
+            },
+        )
     }
 }
 

@@ -51,17 +51,17 @@ object PlaylistMessages {
         isMe: Boolean,
         name: String,
     ): String = if (isMe) {
-            "Your Spotify login has expired. Log out and log in again."
-        } else {
-            "$name needs to log in to the app again (Spotify logins expire after 6 months)."
-        }
+        "Your Spotify login has expired. Log out and log in again."
+    } else {
+        "$name needs to log in to the app again (Spotify logins expire after 6 months)."
+    }
 
     fun spotifyError(e: RestClientResponseException): String = when (e.statusCode.value()) {
-            403 -> SPOTIFY_FORBIDDEN
-            404 -> "Spotify couldn't find that playlist. It may have been deleted."
-            429 -> "Spotify is rate limiting the app. Try again in a minute."
-            else -> "Spotify returned an error (${e.statusCode.value()})."
-        }
+        403 -> SPOTIFY_FORBIDDEN
+        404 -> "Spotify couldn't find that playlist. It may have been deleted."
+        429 -> "Spotify is rate limiting the app. Try again in a minute."
+        else -> "Spotify returned an error (${e.statusCode.value()})."
+    }
 
     /** Explains a playlist that came out shorter than requested, e.g. "Spotify only had 48 usable top tracks for you". */
     private fun shortNote(
@@ -72,10 +72,10 @@ object PlaylistMessages {
         if (blend.trackCount >= blend.size) return ""
         val counts = outcome.usableTracks.entries.joinToString(", ") { (id, count) -> "${nameOf(id)}: $count" }
         val why = if (blend.memberIds.size == 1) {
-                "Spotify only had that many usable top tracks for you"
-            } else {
-                "not enough usable top tracks to fill an even split"
-            }
+            "Spotify only had that many usable top tracks for you"
+        } else {
+            "not enough usable top tracks to fill an even split"
+        }
         return " That's fewer than the ${blend.size} you asked for: $why (usable top tracks: $counts)."
     }
 }

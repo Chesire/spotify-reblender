@@ -76,16 +76,16 @@ class SecurityConfig {
          * Inline style *attributes* are allowed for per-member colours and bar widths; inline <style>/<script> are not.
          */
         const val CONTENT_SECURITY_POLICY = "default-src 'self'; " +
-                "script-src 'self'; " +
-                "style-src 'self'; " +
-                "style-src-attr 'unsafe-inline'; " +
-                "img-src 'self' data: https://*.scdn.co https://*.spotifycdn.com; " +
-                "font-src 'self'; " +
-                "connect-src 'self'; " +
-                "object-src 'none'; " +
-                "base-uri 'none'; " +
-                "form-action 'self'; " +
-                "frame-ancestors 'none'"
+            "script-src 'self'; " +
+            "style-src 'self'; " +
+            "style-src-attr 'unsafe-inline'; " +
+            "img-src 'self' data: https://*.scdn.co https://*.spotifycdn.com; " +
+            "font-src 'self'; " +
+            "connect-src 'self'; " +
+            "object-src 'none'; " +
+            "base-uri 'none'; " +
+            "form-action 'self'; " +
+            "frame-ancestors 'none'"
 
         const val PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
     }

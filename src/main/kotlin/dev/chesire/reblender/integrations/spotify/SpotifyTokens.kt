@@ -18,17 +18,17 @@ class SpotifyTokens(
     /** A valid access token for [spotifyId], refreshed if needed. */
     fun accessTokenFor(spotifyId: String): String {
         val request = OAuth2AuthorizeRequest
-                .withClientRegistrationId(REGISTRATION_ID)
-                .principal(spotifyId)
-                .build()
+            .withClientRegistrationId(REGISTRATION_ID)
+            .principal(spotifyId)
+            .build()
         val client = try {
-                clientManager.authorize(request)
-            } catch (e: ClientAuthorizationException) {
-                // e.g. invalid_grant: the refresh token has expired. The stored client is removed by Spring.
-                // Only the OAuth error code is logged; the exception never carries token values.
-                LoggerFactory.getLogger(javaClass).warn("Token refresh for {} failed: {}", spotifyId, e.error.errorCode)
-                throw ReloginRequiredException(spotifyId)
-            }
+            clientManager.authorize(request)
+        } catch (e: ClientAuthorizationException) {
+            // e.g. invalid_grant: the refresh token has expired. The stored client is removed by Spring.
+            // Only the OAuth error code is logged; the exception never carries token values.
+            LoggerFactory.getLogger(javaClass).warn("Token refresh for {} failed: {}", spotifyId, e.error.errorCode)
+            throw ReloginRequiredException(spotifyId)
+        }
         return client?.accessToken?.tokenValue ?: throw ReloginRequiredException(spotifyId)
     }
 

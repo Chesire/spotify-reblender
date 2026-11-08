@@ -39,12 +39,12 @@ class EncryptedJdbcAuthorizedClientService(
         clientRegistrationId: String,
         principalName: String,
     ): T? = try {
-            super.loadAuthorizedClient(clientRegistrationId, principalName)
-        } catch (e: TokenDecryptionException) {
-            log.warn("Discarding unreadable stored token for {} ({}); the user must log in again", principalName, e.message)
-            removeAuthorizedClient(clientRegistrationId, principalName)
-            null
-        }
+        super.loadAuthorizedClient(clientRegistrationId, principalName)
+    } catch (e: TokenDecryptionException) {
+        log.warn("Discarding unreadable stored token for {} ({}); the user must log in again", principalName, e.message)
+        removeAuthorizedClient(clientRegistrationId, principalName)
+        null
+    }
 }
 
 /** Wraps Spring's default column mapping and encrypts the two token BLOBs. Fails closed on anything unexpected. */
@@ -55,9 +55,9 @@ internal class EncryptingParametersMapper(
 
     override fun apply(holder: OAuth2AuthorizedClientHolder): List<SqlParameterValue> {
         val aad = TokenCipher.associatedData(
-                holder.authorizedClient.clientRegistration.registrationId,
-                holder.principal.name,
-            )
+            holder.authorizedClient.clientRegistration.registrationId,
+            holder.principal.name,
+        )
         return delegate.apply(holder).map { parameter ->
             if (parameter.sqlType != Types.BLOB) return@map parameter
             when (val value = parameter.value) {
@@ -84,19 +84,19 @@ internal class DecryptingRowMapper(
         val registrationId = rs.getString("client_registration_id")
         val principalName = rs.getString("principal_name")
         val registration = clientRegistrations.findByRegistrationId(registrationId)
-                ?: throw DataRetrievalFailureException("Client registration '$registrationId' no longer exists")
+            ?: throw DataRetrievalFailureException("Client registration '$registrationId' no longer exists")
         val aad = TokenCipher.associatedData(registrationId, principalName)
 
         val accessToken = OAuth2AccessToken(
-                OAuth2AccessToken.TokenType.BEARER,
-                decryptToString(rs.getBytes("access_token_value"), aad),
-                rs.getTimestamp("access_token_issued_at").toInstant(),
-                rs.getTimestamp("access_token_expires_at").toInstant(),
-                rs.getString("access_token_scopes")?.let(StringUtils::commaDelimitedListToSet) ?: emptySet(),
-            )
+            OAuth2AccessToken.TokenType.BEARER,
+            decryptToString(rs.getBytes("access_token_value"), aad),
+            rs.getTimestamp("access_token_issued_at").toInstant(),
+            rs.getTimestamp("access_token_expires_at").toInstant(),
+            rs.getString("access_token_scopes")?.let(StringUtils::commaDelimitedListToSet) ?: emptySet(),
+        )
         val refreshToken = rs.getBytes("refresh_token_value")?.let { bytes ->
-                OAuth2RefreshToken(decryptToString(bytes, aad), rs.getTimestamp("refresh_token_issued_at")?.toInstant())
-            }
+            OAuth2RefreshToken(decryptToString(bytes, aad), rs.getTimestamp("refresh_token_issued_at")?.toInstant())
+        }
         return OAuth2AuthorizedClient(registration, principalName, accessToken, refreshToken)
     }
 

@@ -9,21 +9,21 @@ object PlaylistLabels {
     fun title(range: TimeRange): String = PlaylistNaming.title(range)
 
     fun window(range: TimeRange): String = when (range) {
-            TimeRange.RECENT -> "last ~4 weeks"
-            TimeRange.HALF_YEAR -> "last ~6 months"
-            TimeRange.ALL_TIME -> "last ~year"
-        }
+        TimeRange.RECENT -> "last ~4 weeks"
+        TimeRange.HALF_YEAR -> "last ~6 months"
+        TimeRange.ALL_TIME -> "last ~year"
+    }
 
     fun sharedMode(mode: SharedMode): String = when (mode) {
-            SharedMode.CAPPED -> "Cap shared songs by group size"
-            SharedMode.FILL -> "Let shared songs fill it"
-        }
+        SharedMode.CAPPED -> "Cap shared songs by group size"
+        SharedMode.FILL -> "Let shared songs fill it"
+    }
 
     /** Short form for the segmented button. */
     fun sharedModeOption(mode: SharedMode): String = when (mode) {
-            SharedMode.CAPPED -> "Cap by group size"
-            SharedMode.FILL -> "Let them fill it"
-        }
+        SharedMode.CAPPED -> "Cap by group size"
+        SharedMode.FILL -> "Let them fill it"
+    }
 
     val timeRangeOptions: List<TimeRangeOption> =
         TimeRange.entries.map { TimeRangeOption(it.name, title(it), window(it)) }

@@ -20,12 +20,12 @@ object SpotifyProfile {
      */
     internal fun avatarUrl(images: Any?): String? {
         val candidates = (images as? List<*>)
-                .orEmpty()
-                .mapNotNull { it as? Map<*, *> }
-                .mapNotNull { image ->
-                    val url = image["url"] as? String ?: return@mapNotNull null
-                    url to (image["height"] as? Number)?.toInt()
-                }
+            .orEmpty()
+            .mapNotNull { it as? Map<*, *> }
+            .mapNotNull { image ->
+                val url = image["url"] as? String ?: return@mapNotNull null
+                url to (image["height"] as? Number)?.toInt()
+            }
         return SpotifyImages.pick(candidates)
     }
 }

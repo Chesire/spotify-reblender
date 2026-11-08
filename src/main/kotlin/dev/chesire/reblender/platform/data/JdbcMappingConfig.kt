@@ -16,13 +16,13 @@ class JdbcMappingConfig {
         @Bean
         @JvmStatic
         fun unquotedIdentifiers(): BeanPostProcessor = object : BeanPostProcessor {
-                override fun postProcessBeforeInitialization(
-                    bean: Any,
-                    beanName: String,
-                ): Any {
-                    if (bean is RelationalMappingContext) bean.isForceQuote = false
-                    return bean
-                }
+            override fun postProcessBeforeInitialization(
+                bean: Any,
+                beanName: String,
+            ): Any {
+                if (bean is RelationalMappingContext) bean.isForceQuote = false
+                return bean
             }
+        }
     }
 }

@@ -10,24 +10,24 @@ object LogRedaction {
 
     /** Query parameters whose values are safe to show (Spotify API paging/filters and this app's own flags). */
     private val SAFE_PARAMS = setOf(
-            "time_range",
-            "limit",
-            "offset",
-            "uris",
-            "market",
-            "fields",
-            "expired",
-            "error",
-            "returnTo",
-            "continue",
-            "logout",
-        )
+        "time_range",
+        "limit",
+        "offset",
+        "uris",
+        "market",
+        "fields",
+        "expired",
+        "error",
+        "returnTo",
+        "continue",
+        "logout",
+    )
 
     /** Keys whose values must never appear, if they show up in a JSON error body. */
     private val SECRET_JSON_KEY = Regex(
-            "\"(access_token|refresh_token|id_token|token|client_secret|code|code_verifier|assertion)\"\\s*:\\s*\"[^\"]*\"",
-            RegexOption.IGNORE_CASE,
-        )
+        "\"(access_token|refresh_token|id_token|token|client_secret|code|code_verifier|assertion)\"\\s*:\\s*\"[^\"]*\"",
+        RegexOption.IGNORE_CASE,
+    )
 
     /** Anything shaped like a bearer credential, wherever it appears. */
     private val BEARER = Regex("(?i)bearer\\s+[A-Za-z0-9._~+/=-]+")

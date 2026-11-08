@@ -22,18 +22,18 @@ class PlaylistApiJsonTest {
     @Test
     fun `playlist response is plain JSON`() {
         val blend = Blend(
-                playlistId = "0123456789abcdefghijkl",
-                playlistName = "A & B - Recent favourites",
-                playlistUrl = "https://open.spotify.com/playlist/0123456789abcdefghijkl",
-                ownerId = "a",
-                memberIds = listOf("a", "b"),
-                timeRange = TimeRange.RECENT,
-                size = 20,
-                sharedMode = SharedMode.FILL,
-                trackCount = 20,
-                createdAt = Instant.parse("2026-11-08T12:00:00Z"),
-                updatedAt = Instant.parse("2026-11-08T12:00:00Z"),
-            )
+            playlistId = "0123456789abcdefghijkl",
+            playlistName = "A & B - Recent favourites",
+            playlistUrl = "https://open.spotify.com/playlist/0123456789abcdefghijkl",
+            ownerId = "a",
+            memberIds = listOf("a", "b"),
+            timeRange = TimeRange.RECENT,
+            size = 20,
+            sharedMode = SharedMode.FILL,
+            trackCount = 20,
+            createdAt = Instant.parse("2026-11-08T12:00:00Z"),
+            updatedAt = Instant.parse("2026-11-08T12:00:00Z"),
+        )
         val text = json.writeValueAsString(PlaylistResponse.of(blend))
         assertContains(text, "\"id\":\"0123456789abcdefghijkl\"")
         assertContains(text, "\"timeRange\":\"RECENT\"")

@@ -137,16 +137,16 @@ class PlaylistController(
         action: () -> String,
     ) {
         val error = try {
-                redirect.addFlashAttribute("message", action())
-                return
-            } catch (e: ReloginRequiredException) {
-                PlaylistMessages.loginExpired(e.spotifyId == me, nameOf(e.spotifyId))
-            } catch (e: RestClientResponseException) {
-                log.warn("Spotify API error {}: {}", e.statusCode, e.responseBodyAsString)
-                PlaylistMessages.spotifyError(e)
-            } catch (e: IllegalArgumentException) {
-                e.message ?: "Invalid request."
-            }
+            redirect.addFlashAttribute("message", action())
+            return
+        } catch (e: ReloginRequiredException) {
+            PlaylistMessages.loginExpired(e.spotifyId == me, nameOf(e.spotifyId))
+        } catch (e: RestClientResponseException) {
+            log.warn("Spotify API error {}: {}", e.statusCode, e.responseBodyAsString)
+            PlaylistMessages.spotifyError(e)
+        } catch (e: IllegalArgumentException) {
+            e.message ?: "Invalid request."
+        }
         redirect.addFlashAttribute("error", error)
     }
 

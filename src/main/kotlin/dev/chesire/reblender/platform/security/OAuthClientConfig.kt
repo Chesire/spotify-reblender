@@ -81,17 +81,17 @@ class OAuthClientConfig {
 
     /** Mirrors Spring Security's default token-endpoint RestClient, with [OutgoingRequestLogger] added. */
     private fun loggingTokenRestClient(): RestClient = RestClient
-            .builder()
-            .configureMessageConverters { converters ->
-                converters.addCustomConverter(FormHttpMessageConverter())
-                converters.addCustomConverter(OAuth2AccessTokenResponseHttpMessageConverter())
-            }.defaultStatusHandler(OAuth2ErrorResponseErrorHandler())
-            .requestInterceptor(OutgoingRequestLogger())
-            .build()
+        .builder()
+        .configureMessageConverters { converters ->
+            converters.addCustomConverter(FormHttpMessageConverter())
+            converters.addCustomConverter(OAuth2AccessTokenResponseHttpMessageConverter())
+        }.defaultStatusHandler(OAuth2ErrorResponseErrorHandler())
+        .requestInterceptor(OutgoingRequestLogger())
+        .build()
 
     /** Mirrors DefaultOAuth2UserService's default RestTemplate, with [OutgoingRequestLogger] added. */
     private fun loggingUserInfoRestTemplate(): RestTemplate = RestTemplate().apply {
-            errorHandler = OAuth2ErrorResponseErrorHandler()
-            interceptors.add(OutgoingRequestLogger())
-        }
+        errorHandler = OAuth2ErrorResponseErrorHandler()
+        interceptors.add(OutgoingRequestLogger())
+    }
 }

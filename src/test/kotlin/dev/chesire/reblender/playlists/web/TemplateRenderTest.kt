@@ -24,44 +24,44 @@ import kotlin.test.assertFalse
  */
 class TemplateRenderTest {
     private val engine = SpringTemplateEngine().apply {
-            setTemplateResolver(
-                ClassLoaderTemplateResolver().apply {
-                    prefix = "templates/"
-                    suffix = ".html"
-                    templateMode = TemplateMode.HTML
-                    characterEncoding = "UTF-8"
-                },
-            )
-            // Outside a web request, render context-relative links like @{/css/app.css} as-is.
-            setLinkBuilder(
-                object : StandardLinkBuilder() {
-                    override fun computeContextPath(
-                        context: IExpressionContext?,
-                        base: String?,
-                        parameters: MutableMap<String, Any>?,
-                    ): String = ""
-                },
-            )
-        }
+        setTemplateResolver(
+            ClassLoaderTemplateResolver().apply {
+                prefix = "templates/"
+                suffix = ".html"
+                templateMode = TemplateMode.HTML
+                characterEncoding = "UTF-8"
+            },
+        )
+        // Outside a web request, render context-relative links like @{/css/app.css} as-is.
+        setLinkBuilder(
+            object : StandardLinkBuilder() {
+                override fun computeContextPath(
+                    context: IExpressionContext?,
+                    base: String?,
+                    parameters: MutableMap<String, Any>?,
+                ): String = ""
+            },
+        )
+    }
 
     private val blend = Blend(
-            playlistId = "p1",
-            playlistName = "Chesire, Sam & Alex Morgan - Half-year favourites",
-            playlistUrl = "https://open.spotify.com/playlist/p1",
-            ownerId = "chesire",
-            memberIds = listOf("chesire", "sam", "alex"),
-            timeRange = TimeRange.HALF_YEAR,
-            size = 12,
-            sharedMode = SharedMode.CAPPED,
-            trackCount = 12,
-            createdAt = Instant.EPOCH,
-            updatedAt = Instant.EPOCH,
-        )
+        playlistId = "p1",
+        playlistName = "Chesire, Sam & Alex Morgan - Half-year favourites",
+        playlistUrl = "https://open.spotify.com/playlist/p1",
+        ownerId = "chesire",
+        memberIds = listOf("chesire", "sam", "alex"),
+        timeRange = TimeRange.HALF_YEAR,
+        size = 12,
+        sharedMode = SharedMode.CAPPED,
+        trackCount = 12,
+        createdAt = Instant.EPOCH,
+        updatedAt = Instant.EPOCH,
+    )
     private val users = listOf(
-            AppUser("chesire", "Chesire", SAMPLE_AVATAR),
-            AppUser("sam", "Sam"),
-            AppUser("alex", "Alex Morgan"),
-        )
+        AppUser("chesire", "Chesire", SAMPLE_AVATAR),
+        AppUser("sam", "Sam"),
+        AppUser("alex", "Alex Morgan"),
+    )
 
     private fun track(
         n: Int,
@@ -82,19 +82,19 @@ class TemplateRenderTest {
     }
 
     private val tracks = listOf(
-            track(1, "Midnight Static", "The Lanterns", "chesire", "sam", "alex"),
-            track(2, "Paper Boats", "Juniper Coast", "chesire"),
-            track(3, "Low Orbit", "Ana Reyes", "sam"),
-            track(4, "Glasshouse", "Northbound", "alex"),
-            track(5, "Signal Fires", "The Lanterns", "chesire", "sam"),
-            track(6, "Slow Bloom", "Mira Vale", "chesire"),
-            track(7, "Copper Sky", "Dune Theory", "sam"),
-            track(8, "Ever After Hours", "Kit Halloway", "alex"),
-            track(9, "Tidal", "Juniper Coast", "sam", "alex"),
-            track(10, "Second Wind", "Pale Harbour", "chesire"),
-            track(11, "Kites", "Ana Reyes", "sam"),
-            track(12, "A Long Way Round", "Northbound feat. Mira Vale", "alex"),
-        )
+        track(1, "Midnight Static", "The Lanterns", "chesire", "sam", "alex"),
+        track(2, "Paper Boats", "Juniper Coast", "chesire"),
+        track(3, "Low Orbit", "Ana Reyes", "sam"),
+        track(4, "Glasshouse", "Northbound", "alex"),
+        track(5, "Signal Fires", "The Lanterns", "chesire", "sam"),
+        track(6, "Slow Bloom", "Mira Vale", "chesire"),
+        track(7, "Copper Sky", "Dune Theory", "sam"),
+        track(8, "Ever After Hours", "Kit Halloway", "alex"),
+        track(9, "Tidal", "Juniper Coast", "sam", "alex"),
+        track(10, "Second Wind", "Pale Harbour", "chesire"),
+        track(11, "Kites", "Ana Reyes", "sam"),
+        track(12, "A Long Way Round", "Northbound feat. Mira Vale", "alex"),
+    )
 
     @Test
     fun `breakdown page renders members, balance and songs`() {
@@ -126,20 +126,20 @@ class TemplateRenderTest {
     fun `home page links playlist names to the breakdown`() {
         val row = PlaylistRow(blend, "with Sam and Alex Morgan", "2026-11-07 18:30")
         val html = render(
-                "index",
-                mapOf(
-                    "loggedIn" to true,
-                    "me" to "Chesire",
-                    "partners" to users.drop(1),
-                    "maxPartners" to 4,
-                    "playlists" to listOf(row),
-                    "timeRanges" to PlaylistLabels.timeRangeOptions,
-                    "sharedModes" to PlaylistLabels.sharedModeOptions,
-                    "defaultSize" to 40,
-                    "tracksPerPerson" to 50,
-                    "allowBlending" to true,
-                ),
-            )
+            "index",
+            mapOf(
+                "loggedIn" to true,
+                "me" to "Chesire",
+                "partners" to users.drop(1),
+                "maxPartners" to 4,
+                "playlists" to listOf(row),
+                "timeRanges" to PlaylistLabels.timeRangeOptions,
+                "sharedModes" to PlaylistLabels.sharedModeOptions,
+                "defaultSize" to 40,
+                "tracksPerPerson" to 50,
+                "allowBlending" to true,
+            ),
+        )
         assertContains(html, "href=\"/playlists/p1\"")
         assertContains(html, "Show breakdown")
         assertContains(html, "<dialog")
@@ -181,8 +181,8 @@ class TemplateRenderTest {
         val css = File("src/main/resources/static/css/app.css").readText()
         val js = File("src/main/resources/static/js/app.js").readText()
         val standalone = html
-                .replace("<link rel=\"stylesheet\" href=\"/css/app.css\">", "<style>\n$css\n</style>")
-                .replace("<script src=\"/js/app.js\"></script>", "<script>\n$js\n</script>")
+            .replace("<link rel=\"stylesheet\" href=\"/css/app.css\">", "<style>\n$css\n</style>")
+            .replace("<script src=\"/js/app.js\"></script>", "<script>\n$js\n</script>")
         File(dir, "$name.html").writeText(standalone)
         File(dir, "$name.b64").writeText(Base64.getEncoder().encodeToString(standalone.toByteArray()))
     }
@@ -190,8 +190,8 @@ class TemplateRenderTest {
     private companion object {
         /** A tiny inline image so the preview shows a "real" profile picture without network access. */
         const val SAMPLE_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>" +
-                "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f6d365'/>" +
-                "<stop offset='1' stop-color='%23fda085'/></linearGradient></defs><rect width='64' height='64' fill='url(%23g)'/>" +
-                "<circle cx='32' cy='26' r='12' fill='%23fff8'/><rect x='14' y='42' width='36' height='22' rx='11' fill='%23fff8'/></svg>"
+            "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f6d365'/>" +
+            "<stop offset='1' stop-color='%23fda085'/></linearGradient></defs><rect width='64' height='64' fill='url(%23g)'/>" +
+            "<circle cx='32' cy='26' r='12' fill='%23fff8'/><rect x='14' y='42' width='36' height='22' rx='11' fill='%23fff8'/></svg>"
     }
 }
