@@ -235,9 +235,7 @@ class HomeController(
             log.warn("Spotify API error {}: {}", e.statusCode, e.responseBodyAsString)
             val text =
                 when (e.statusCode.value()) {
-                    403 ->
-                        "Spotify refused the request (403). " +
-                            "Check everyone in the blend is on the app's allowlist in the Spotify dashboard."
+                    403 -> SPOTIFY_FORBIDDEN_MESSAGE
                     404 -> "Spotify couldn't find that playlist. It may have been deleted."
                     429 -> "Spotify is rate limiting the app. Try again in a minute."
                     else -> "Spotify returned an error (${e.statusCode.value()})."
@@ -256,6 +254,8 @@ class HomeController(
 
     companion object {
         const val DEFAULT_SIZE = 40
+        private const val SPOTIFY_FORBIDDEN_MESSAGE =
+            "Spotify refused the request (403). Check everyone in the blend is on the app's allowlist in the Spotify dashboard."
         private val UPDATED_FORMAT: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
     }
