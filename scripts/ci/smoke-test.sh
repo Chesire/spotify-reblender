@@ -20,6 +20,7 @@ echo "$location"
 [[ $location == *"scope=user-top-read%20playlist-modify-private%20playlist-modify-public&"* ]] || fail "unexpected scopes"
 [[ $location == *"code_challenge="* ]] || fail "no PKCE code_challenge"
 [[ $location == *"code_challenge_method=S256"* ]] || fail "PKCE method isn't S256"
+[[ $location == *"show_dialog=true"* ]] || fail "Spotify isn't asked to always show its approval page"
 
 echo "== Security headers"
 curl -s -D headers.txt -o /dev/null "$base/"
