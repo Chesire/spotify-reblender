@@ -18,4 +18,11 @@ data class Blend(
     val trackCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** Whether the weekly job rebuilds this blend. */
+    val autoUpdate: Boolean = true,
+    /** When the weekly job last tried this blend, whether or not it worked. */
+    val lastAutoUpdateAt: Instant? = null,
+    /** Why that attempt didn't update the playlist, or null if it did. */
+    val lastAutoUpdateFailure: AutoUpdateFailure? = null,
+    val lastAutoUpdateDetail: String? = null,
 )

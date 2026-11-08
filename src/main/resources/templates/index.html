@@ -115,6 +115,7 @@
                             <span th:text="${row.withLabel}">with someone</span>
                             &middot; <span th:text="${row.blend.trackCount}">0</span>/<span th:text="${row.blend.size}">0</span> songs
                             &middot; updated <span th:text="${row.updatedLabel}">date</span>
+                            &middot; <span th:text="${row.autoUpdate.text}" th:classappend="${row.autoUpdate.problem} ? 'status-problem'">updates weekly</span>
                         </p>
                     </div>
                     <div class="tile-actions">

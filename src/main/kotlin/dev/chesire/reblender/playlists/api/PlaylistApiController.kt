@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -48,6 +49,14 @@ class PlaylistApiController(
         @PathVariable playlistId: String,
     ): PlaylistResultResponse = PlaylistResultResponse.of(playlists.update(authentication.name, playlistId))
 
+    /** Turns the weekly update on or off. */
+    @PutMapping("/{playlistId}/auto-update")
+    fun setAutoUpdate(
+        authentication: Authentication,
+        @PathVariable playlistId: String,
+        @RequestBody request: AutoUpdateRequest,
+    ): PlaylistResponse = PlaylistResponse.of(playlists.setAutoUpdate(authentication.name, playlistId, request.autoUpdate))
+
     @DeleteMapping("/{playlistId}")
     fun delete(
         authentication: Authentication,
@@ -55,6 +64,10 @@ class PlaylistApiController(
         @RequestParam(defaultValue = "false") removeFromSpotify: Boolean,
     ): DeleteResponse = DeleteResponse.of(playlists.delete(authentication.name, playlistId, removeFromSpotify))
 }
+
+data class AutoUpdateRequest(
+    val autoUpdate: Boolean,
+)
 
 data class CreatePlaylistRequest(
     val partnerIds: List<String> = emptyList(),

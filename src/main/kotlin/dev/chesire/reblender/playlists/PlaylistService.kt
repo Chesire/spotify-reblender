@@ -14,12 +14,14 @@ import dev.chesire.reblender.playlists.data.BlendRepository
 import dev.chesire.reblender.playlists.data.toEntity
 import dev.chesire.reblender.playlists.data.toModel
 import dev.chesire.reblender.playlists.data.tracksToModel
+import dev.chesire.reblender.playlists.models.AutoUpdateFailure
 import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.playlists.models.BlendDetails
 import dev.chesire.reblender.playlists.models.BlendOutcome
 import dev.chesire.reblender.playlists.models.BlendTrack
 import dev.chesire.reblender.playlists.models.DeleteOutcome
 import org.slf4j.LoggerFactory
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientResponseException
 import java.time.Instant
@@ -33,6 +35,32 @@ class PlaylistService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwnerIdOrderByCreatedAtDesc(ownerId).map { it.toModel() }
+
+    /** Every blend the weekly job should rebuild, oldest first. */
+    fun autoUpdating(): List<Blend> = blends.findByAutoUpdateTrueOrderByCreatedAtAsc().map { it.toModel() }
+
+    /** Turns the weekly update of one of [ownerId]'s blends on or off. */
+    fun setAutoUpdate(
+        ownerId: String,
+        playlistId: String,
+        enabled: Boolean,
+    ): Blend {
+        val entity = ownedBlend(ownerId, playlistId)
+        return blends.save(entity.copy(autoUpdate = enabled)).toModel()
+    }
+
+    /** Records the weekly job's attempt at [playlistId]: when, and why it failed (null [failure] means it worked). */
+    fun recordAutoUpdate(
+        playlistId: String,
+        at: Instant,
+        failure: AutoUpdateFailure?,
+        detail: String?,
+    ) {
+        val entity = blends.findByIdOrNull(playlistId) ?: return
+        blends.save(
+            entity.copy(lastAutoUpdateAt = at, lastAutoUpdateFailure = failure, lastAutoUpdateDetail = detail?.take(200)),
+        )
+    }
 
     /** The blend with its songs and members, or null if it isn't one of [ownerId]'s. */
     fun details(
@@ -102,7 +130,8 @@ class PlaylistService(
             .mapNotNull(accounts::find)
             .firstOrNull { !it.allowBlending }
             ?.let {
-                throw IllegalArgumentException(
+                throw MemberOptedOutException(
+                    it.spotifyId,
                     "${it.displayName} has turned off being included in blends, so this one can't be updated. " +
                         "Delete it or make a new one without them.",
                 )
@@ -161,7 +190,7 @@ class PlaylistService(
         }
         // Enforced here, not just by hiding people in the form: a crafted request can't include someone who opted out.
         others.firstOrNull { !it.allowBlending }?.let {
-            throw IllegalArgumentException("${it.displayName} has turned off being included in blends.")
+            throw MemberOptedOutException(it.spotifyId, "${it.displayName} has turned off being included in blends.")
         }
         return listOf(owner) + others
     }

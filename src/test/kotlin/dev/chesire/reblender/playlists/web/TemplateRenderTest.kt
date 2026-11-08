@@ -100,7 +100,14 @@ class TemplateRenderTest {
 
     @Test
     fun `breakdown page renders members, balance and songs`() {
-        val html = render("breakdown", mapOf("b" to Breakdown.of(blend, users, tracks), "updatedLabel" to "2026-11-07 18:30"))
+        val html = render(
+            "breakdown",
+            mapOf(
+                "b" to Breakdown.of(blend, users, tracks),
+                "updatedLabel" to "2026-11-07 18:30",
+                "autoUpdate" to AutoUpdateStatus("weekly update skipped: Sam needs to log in again", problem = true),
+            ),
+        )
         assertContains(html, "Chesire, Sam &amp; Alex Morgan - Half-year favourites")
         assertContains(html, "Midnight Static")
         assertContains(html, "A Long Way Round")
@@ -113,6 +120,9 @@ class TemplateRenderTest {
         assertContains(html, "https://open.spotify.com/track/t1")
         assertContains(html, "From Chesire, Sam, Alex Morgan")
         assertContains(html, "Last ~6 months")
+        assertContains(html, "Weekly update skipped: Sam needs to log in again")
+        assertContains(html, "/playlists/p1/auto-update")
+        assertContains(html, "status-problem")
         assertContains(html, "Cap shared songs by group size")
         assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("breakdown", html)
@@ -120,13 +130,20 @@ class TemplateRenderTest {
 
     @Test
     fun `breakdown page with no recorded songs shows the empty state`() {
-        val html = render("breakdown", mapOf("b" to Breakdown.of(blend, users, emptyList()), "updatedLabel" to "2026-11-07 18:30"))
+        val html = render(
+            "breakdown",
+            mapOf(
+                "b" to Breakdown.of(blend, users, emptyList()),
+                "updatedLabel" to "2026-11-07 18:30",
+                "autoUpdate" to AutoUpdateStatus("updates weekly", problem = false),
+            ),
+        )
         assertContains(html, "No breakdown recorded yet")
     }
 
     @Test
     fun `home page links playlist names to the breakdown`() {
-        val row = PlaylistRow(blend, "with Sam and Alex Morgan", "2026-11-07 18:30")
+        val row = PlaylistRow(blend, "with Sam and Alex Morgan", "2026-11-07 18:30", AutoUpdateStatus("updates weekly", problem = false))
         val html = render(
             "index",
             mapOf(
@@ -144,6 +161,7 @@ class TemplateRenderTest {
         )
         assertContains(html, "href=\"/playlists/p1\"")
         assertContains(html, "Show breakdown")
+        assertContains(html, "updates weekly")
         assertContains(html, "<dialog")
         assertContains(html, "/account/blending")
         assertContains(html, "value=\"HALF_YEAR\"")

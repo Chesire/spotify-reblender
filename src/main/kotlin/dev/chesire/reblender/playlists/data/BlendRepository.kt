@@ -11,6 +11,8 @@ interface BlendRepository :
     InsertableRepository<BlendEntity> {
     fun findByOwnerIdOrderByCreatedAtDesc(ownerId: String): List<BlendEntity>
 
+    fun findByAutoUpdateTrueOrderByCreatedAtAsc(): List<BlendEntity>
+
     fun findByPlaylistIdAndOwnerId(
         playlistId: String,
         ownerId: String,

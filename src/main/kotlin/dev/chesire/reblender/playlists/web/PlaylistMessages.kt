@@ -1,5 +1,7 @@
 package dev.chesire.reblender.playlists.web
 
+import dev.chesire.reblender.playlists.models.AutoUpdateFailure
+import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.playlists.models.BlendOutcome
 import dev.chesire.reblender.playlists.models.DeleteOutcome
 import org.springframework.web.client.RestClientResponseException
@@ -61,6 +63,29 @@ object PlaylistMessages {
         404 -> "Spotify couldn't find that playlist. It may have been deleted."
         429 -> "Spotify is rate limiting the app. Try again in a minute."
         else -> "Spotify returned an error (${e.statusCode.value()})."
+    }
+
+    /** What the list and breakdown say about a blend's weekly update. */
+    fun autoUpdate(
+        blend: Blend,
+        nameOf: (String) -> String,
+    ): AutoUpdateStatus {
+        if (!blend.autoUpdate) return AutoUpdateStatus("weekly updates off", problem = false)
+        val failure = blend.lastAutoUpdateFailure
+        val detail = blend.lastAutoUpdateDetail
+        if (failure != null) {
+            val why = when (failure) {
+                AutoUpdateFailure.RELOGIN_REQUIRED -> "${detail?.let(nameOf) ?: "someone"} needs to log in again"
+                AutoUpdateFailure.MEMBER_OPTED_OUT -> "${detail?.let(nameOf) ?: "someone"} turned off blending"
+                AutoUpdateFailure.PLAYLIST_GONE -> "the playlist is gone from Spotify"
+                AutoUpdateFailure.SPOTIFY_LIMIT -> "Spotify's limit was reached, it'll try again next week"
+                AutoUpdateFailure.SPOTIFY_ERROR -> "Spotify returned an error (${detail ?: "unknown"})"
+                AutoUpdateFailure.OTHER -> detail ?: "something went wrong"
+            }
+            return AutoUpdateStatus("weekly update skipped: $why", problem = true)
+        }
+        val last = blend.lastAutoUpdateAt ?: return AutoUpdateStatus("updates weekly", problem = false)
+        return AutoUpdateStatus("updates weekly (last ${updated(last)})", problem = false)
     }
 
     /** Explains a playlist that came out shorter than requested, e.g. "Spotify only had 48 usable top tracks for you". */

@@ -61,6 +61,7 @@ class PlaylistController(
                     blend = blend,
                     withLabel = if (others.isEmpty()) "just you" else "with " + PlaylistNaming.joinNames(others, "and"),
                     updatedLabel = PlaylistMessages.updated(blend.updatedAt),
+                    autoUpdate = PlaylistMessages.autoUpdate(blend) { names[it] ?: it },
                 )
             },
         )
@@ -102,6 +103,7 @@ class PlaylistController(
         }
         model.addAttribute("b", Breakdown.of(details))
         model.addAttribute("updatedLabel", PlaylistMessages.updated(details.blend.updatedAt))
+        model.addAttribute("autoUpdate", PlaylistMessages.autoUpdate(details.blend, ::nameOf))
         return "breakdown"
     }
 
@@ -116,6 +118,26 @@ class PlaylistController(
             PlaylistMessages.refreshed(playlists.update(authentication.name, playlistId), ::nameOf)
         }
         // Only ever redirect to our own pages.
+        return if (returnTo == "breakdown" && SpotifyIds.isPlaylistId(playlistId)) "redirect:/playlists/$playlistId" else "redirect:/"
+    }
+
+    /** Turns the weekly update of a blend on or off. */
+    @PostMapping("/playlists/{playlistId}/auto-update")
+    fun setAutoUpdate(
+        authentication: Authentication,
+        @PathVariable playlistId: String,
+        @RequestParam(defaultValue = "false") autoUpdate: Boolean,
+        @RequestParam(required = false) returnTo: String?,
+        redirect: RedirectAttributes,
+    ): String {
+        handle(authentication.name, redirect) {
+            val blend = playlists.setAutoUpdate(authentication.name, playlistId, autoUpdate)
+            if (blend.autoUpdate) {
+                "\"${blend.playlistName}\" will update every Monday morning."
+            } else {
+                "\"${blend.playlistName}\" won't update automatically."
+            }
+        }
         return if (returnTo == "breakdown" && SpotifyIds.isPlaylistId(playlistId)) "redirect:/playlists/$playlistId" else "redirect:/"
     }
 
