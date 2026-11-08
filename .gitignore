@@ -5,6 +5,7 @@ build/
 *.iml
 .kotlin/
 out/
-data/
+/data/
 .env
 .DS_Store
+secrets/

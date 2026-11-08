@@ -1,0 +1,40 @@
+# Strongest option: run the jar directly under systemd with the TPM-sealed key.
+# The key is only ever a file in systemd's private credentials directory: never in .env,
+# never in an environment variable, never on disk unencrypted.
+#
+# Setup: see "Sealing the key to this machine (TPM)" in README.md.
+#   ./gradlew bootJar && sudo mkdir -p /opt/spotify-reblender
+#   sudo cp build/libs/spotify-reblender-*.jar /opt/spotify-reblender/app.jar
+#   sudo cp .env /opt/spotify-reblender/.env && sudo chmod 600 /opt/spotify-reblender/.env   # TOKEN_ENCRYPTION_KEY left empty
+#   sudo cp deploy/systemd/spotify-reblender.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now spotify-reblender
+[Unit]
+Description=spotify-reblender (JVM, TPM-sealed token key)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+DynamicUser=yes
+StateDirectory=spotify-reblender
+EnvironmentFile=/opt/spotify-reblender/.env
+Environment=DATABASE_URL=jdbc:h2:file:/var/lib/spotify-reblender/reblender
+LoadCredentialEncrypted=reblender-token-key:/etc/credstore.encrypted/reblender-token-key
+Environment=TOKEN_ENCRYPTION_KEY_FILE=%d/reblender-token-key
+ExecStart=/usr/bin/java -jar /opt/spotify-reblender/app.jar
+Restart=on-failure
+RestartSec=10
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

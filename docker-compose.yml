@@ -1,0 +1,18 @@
+services:
+  reblender:
+    build: .
+    env_file: .env
+    ports:
+      # Only reachable from this machine. Put a TLS reverse proxy in front to expose it.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - reblender-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  reblender-data:
