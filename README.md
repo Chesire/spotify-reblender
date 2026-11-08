@@ -151,4 +151,32 @@ Rotating the key: replace it (re-run the `openssl ... | systemd-creds encrypt` l
 
 ## Stack
 
-Kotlin 2.3, Spring Boot 4.1 (Spring Security OAuth2 client, MVC, JDBC), Thymeleaf, H2, kotlinx.serialization, Docker.
+Kotlin 2.3, Spring Boot 4.1 (Spring Security OAuth2 client, MVC, Spring Data JDBC), Thymeleaf, H2, kotlinx.serialization, Docker. KtLint runs as part of `./gradlew build`.
+
+### Layout
+
+The code is packaged by feature:
+
+| Package | What's in it |
+|---|---|
+| `blend` | The blend engine and its models. Plain Kotlin, no Spring. |
+| `playlists` | `PlaylistService` and playlist naming. `data/`: Spring Data JDBC repository. `web/`: pages, view models and wording. `api/`: JSON API. |
+| `accounts` | Users, login handling, the blending opt-out and "Forget me". Same `data/`, `web/` and `api/` split. |
+| `spotify` | Spotify Web API client, token access and JSON DTOs. |
+| `platform` | Cross-cutting security (headers, PKCE, token encryption), logging, config and data support. |
+
+### JSON API
+
+The pages and the API sit on the same services. The API uses the same session login and CSRF protection as the pages. A signed-out request gets `401`, and errors come back as problem details.
+
+| Method | Path | |
+|---|---|---|
+| `GET` | `/api/v1/me` | Your profile and blending setting |
+| `PUT` | `/api/v1/me/blending` | `{"allowBlending": false}` |
+| `DELETE` | `/api/v1/me` | Forget me |
+| `GET` | `/api/v1/people` | People you can blend with |
+| `GET` | `/api/v1/playlists` | Your blends |
+| `POST` | `/api/v1/playlists` | `{"partnerIds": [...], "timeRange": "RECENT", "size": 40, "sharedMode": "CAPPED"}` |
+| `GET` | `/api/v1/playlists/{id}` | A blend with its members and songs |
+| `POST` | `/api/v1/playlists/{id}/refresh` | Rebuild from current top tracks |
+| `DELETE` | `/api/v1/playlists/{id}?removeFromSpotify=true` | Delete |
