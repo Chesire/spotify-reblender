@@ -1,8 +1,5 @@
 package dev.chesire.reblender.platform.security
 
-import java.sql.ResultSet
-import java.sql.Types
-import java.util.function.Function
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataRetrievalFailureException
 import org.springframework.jdbc.core.JdbcOperations
@@ -16,6 +13,9 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.OAuth2AccessToken
 import org.springframework.security.oauth2.core.OAuth2RefreshToken
 import org.springframework.util.StringUtils
+import java.sql.ResultSet
+import java.sql.Types
+import java.util.function.Function
 
 /**
  * Spring's JDBC token store, with access and refresh tokens encrypted (AES-256-GCM) before they hit the database.

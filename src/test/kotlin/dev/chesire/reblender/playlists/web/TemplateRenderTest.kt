@@ -5,18 +5,18 @@ import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.playlists.models.BlendTrack
-import java.io.File
-import java.time.Instant
-import java.util.Base64
-import kotlin.test.Test
-import kotlin.test.assertContains
-import kotlin.test.assertFalse
 import org.thymeleaf.context.Context
 import org.thymeleaf.context.IExpressionContext
 import org.thymeleaf.linkbuilder.StandardLinkBuilder
 import org.thymeleaf.spring6.SpringTemplateEngine
 import org.thymeleaf.templatemode.TemplateMode
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
+import java.io.File
+import java.time.Instant
+import java.util.Base64
+import kotlin.test.Test
+import kotlin.test.assertContains
+import kotlin.test.assertFalse
 
 /**
  * Renders the real templates with sample data (no Spring context or HTTP needed), checks the output,

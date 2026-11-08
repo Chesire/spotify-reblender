@@ -3,6 +3,11 @@ package dev.chesire.reblender.platform.logging
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.mock.http.client.MockClientHttpRequest
+import org.springframework.mock.http.client.MockClientHttpResponse
 import java.net.URI
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -10,11 +15,6 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import org.slf4j.LoggerFactory
-import org.springframework.http.HttpMethod
-import org.springframework.http.HttpStatus
-import org.springframework.mock.http.client.MockClientHttpRequest
-import org.springframework.mock.http.client.MockClientHttpResponse
 
 class OutgoingRequestLoggerTest {
     private val logger = LoggerFactory.getLogger("reblender.http.out") as Logger
