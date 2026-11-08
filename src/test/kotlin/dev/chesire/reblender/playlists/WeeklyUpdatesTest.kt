@@ -48,7 +48,8 @@ class WeeklyUpdatesTest {
         HttpClientErrorException.create(status, "", HttpHeaders.EMPTY, ByteArray(0), Charsets.UTF_8)
 
     /** playlistId -> (failure, detail) for every recordAutoUpdate call. */
-    private fun recorded(): Map<String, Pair<Any?, Any?>> = mockingDetails(playlists).invocations
+    private fun recorded(): Map<String, Pair<Any?, Any?>> = mockingDetails(playlists)
+        .invocations
         .filter { it.method.name == "recordAutoUpdate" }
         .associate { (it.arguments[0] as String) to (it.arguments[2] to it.arguments[3]) }
 
