@@ -26,11 +26,18 @@ import org.springframework.web.client.RestTemplate
 /** Spotify as an OAuth client: encrypted token storage, refresh, PKCE, and logged calls to Spotify's endpoints. */
 @Configuration
 class OAuthClientConfig {
-    /** Login with PKCE (S256) on top of the client secret. */
+    /**
+     * Login with PKCE (S256) on top of the client secret. `show_dialog=true` makes Spotify always show its approval
+     * page (with "Not you?" to switch account) instead of silently signing in whoever is logged into Spotify.
+     */
     @Bean
     fun authorizationRequestResolver(clientRegistrations: ClientRegistrationRepository): DefaultOAuth2AuthorizationRequestResolver =
         DefaultOAuth2AuthorizationRequestResolver(clientRegistrations, "/oauth2/authorization").apply {
-            setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce())
+            setAuthorizationRequestCustomizer(
+                OAuth2AuthorizationRequestCustomizers
+                    .withPkce()
+                    .andThen { request -> request.additionalParameters { it["show_dialog"] = "true" } },
+            )
         }
 
     /** Exchanges the login code for tokens. */
