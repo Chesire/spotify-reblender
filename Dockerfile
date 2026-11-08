@@ -6,7 +6,7 @@ RUN gradle --no-daemon dependencies > /dev/null
 COPY src src
 RUN gradle --no-daemon bootJar -x test
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 # Run as an unprivileged user; only it can read the database (and the encrypted tokens) in /data.
 # Fixed UID/GID 10001 so a key file mounted from the host can be chowned to it.
 RUN groupadd --system --gid 10001 reblender \
