@@ -64,6 +64,15 @@ Open <http://127.0.0.1:8080> and log in. To blend with others, have each of them
 
 Tests: `./gradlew test`.
 
+### Published image
+
+Every merge to `main` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. To use it from another compose file:
+
+```yaml
+reblender:
+  image: ghcr.io/chesire/spotify-reblender:latest
+```
+
 ### Logs
 
 Everything goes to the console (`docker compose logs -f`). Each request the app receives and each call it makes to Spotify gets one line:
