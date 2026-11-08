@@ -47,6 +47,10 @@ spring:
 
 reblender:
   spotify-api-base-url: https://api.spotify.com/v1
+  # Weekly rebuild of every blend with "Update weekly" on (Spring cron: second minute hour day month weekday).
+  auto-update:
+    cron: ${AUTO_UPDATE_CRON:0 0 6 * * MON}
+    zone: ${AUTO_UPDATE_ZONE:Europe/London}
   # Required. Base64 AES-256 key used to encrypt stored Spotify tokens: openssl rand -base64 32
   token-encryption-key: ${TOKEN_ENCRYPTION_KEY:}
   # Or a file containing it (Docker secret / TPM-sealed systemd credential). Set only one of the two.

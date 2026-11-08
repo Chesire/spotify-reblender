@@ -369,3 +369,7 @@ dialog.dialog .check-row input { width: 18px; height: 18px; accent-color: var(--
 .switch input:checked + .track { background: var(--md-primary); border-color: var(--md-primary); }
 .switch input:checked + .track .handle { width: 24px; height: 24px; background: var(--md-on-primary); transform: translateX(16px); }
 .switch input:focus-visible + .track { outline: 3px solid var(--md-primary); outline-offset: 2px; }
+
+/* Weekly update status */
+.status-problem { color: var(--md-error); }
+.card .setting { margin-top: var(--sp-4); }

@@ -25,6 +25,8 @@
                 &middot; <span th:text="${b.sharedModeLabel}">mode</span>
                 &middot; updated <span th:text="${updatedLabel}">date</span>
             </p>
+            <p class="body-medium" th:classappend="${autoUpdate.problem} ? 'status-problem' : 'muted'"
+               th:text="${#strings.capitalize(autoUpdate.text)}">Updates weekly</p>
         </div>
 
         <ul class="members" aria-label="People in this blend">
@@ -45,6 +47,21 @@
                     <th:block th:replace="~{fragments/icons :: icon('refresh')}"></th:block>Update</button>
             </form>
         </div>
+
+        <form th:action="@{/playlists/{id}/auto-update(id=${b.blend.playlistId})}" method="post" class="setting" data-autosubmit>
+            <input type="hidden" name="returnTo" value="breakdown">
+            <label class="switch-row">
+                <span>
+                    <span class="setting-title">Update weekly</span>
+                    <span class="supporting">Rebuilds this playlist from everyone's current top tracks every Monday morning.</span>
+                </span>
+                <span class="switch">
+                    <input type="checkbox" name="autoUpdate" value="true" role="switch" th:checked="${b.blend.autoUpdate}">
+                    <span class="track" aria-hidden="true"><span class="handle"></span></span>
+                </span>
+            </label>
+            <noscript><button type="submit" class="btn btn-tonal">Save</button></noscript>
+        </form>
     </section>
 
     <section class="card" th:unless="${#lists.isEmpty(b.tracks)}">

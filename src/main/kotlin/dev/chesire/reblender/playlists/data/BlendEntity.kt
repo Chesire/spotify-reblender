@@ -3,6 +3,7 @@ package dev.chesire.reblender.playlists.data
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.platform.security.SafeUrls
+import dev.chesire.reblender.playlists.models.AutoUpdateFailure
 import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.playlists.models.BlendTrack
 import org.springframework.data.annotation.Id
@@ -23,6 +24,10 @@ data class BlendEntity(
     val trackCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val autoUpdate: Boolean,
+    val lastAutoUpdateAt: Instant?,
+    val lastAutoUpdateFailure: AutoUpdateFailure?,
+    val lastAutoUpdateDetail: String?,
     /** Everyone in the blend, owner first. */
     @MappedCollection(idColumn = "playlist_id", keyColumn = "member_order")
     val members: List<BlendMemberEntity>,
@@ -63,6 +68,10 @@ fun BlendEntity.toModel() = Blend(
     trackCount = trackCount,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    autoUpdate = autoUpdate,
+    lastAutoUpdateAt = lastAutoUpdateAt,
+    lastAutoUpdateFailure = lastAutoUpdateFailure,
+    lastAutoUpdateDetail = lastAutoUpdateDetail,
 )
 
 fun BlendEntity.tracksToModel() = tracks.map {
@@ -87,6 +96,10 @@ fun Blend.toEntity(tracks: List<BlendTrack>) = BlendEntity(
     trackCount = trackCount,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    autoUpdate = autoUpdate,
+    lastAutoUpdateAt = lastAutoUpdateAt,
+    lastAutoUpdateFailure = lastAutoUpdateFailure,
+    lastAutoUpdateDetail = lastAutoUpdateDetail?.take(200),
     members = memberIds.map(::BlendMemberEntity),
     tracks = tracks.map(BlendTrack::toEntity),
 )

@@ -2,6 +2,7 @@ package dev.chesire.reblender.playlists.api
 
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.playlists.models.AutoUpdateFailure
 import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.playlists.models.BlendDetails
 import dev.chesire.reblender.playlists.models.BlendOutcome
@@ -21,6 +22,12 @@ data class PlaylistResponse(
     val trackCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** Whether the weekly job rebuilds it. */
+    val autoUpdate: Boolean,
+    val lastAutoUpdateAt: Instant?,
+    /** Why the last weekly update didn't happen, or null if it did (or hasn't run yet). */
+    val lastAutoUpdateFailure: AutoUpdateFailure?,
+    val lastAutoUpdateDetail: String?,
 ) {
     companion object {
         fun of(blend: Blend) = PlaylistResponse(
@@ -35,6 +42,10 @@ data class PlaylistResponse(
             trackCount = blend.trackCount,
             createdAt = blend.createdAt,
             updatedAt = blend.updatedAt,
+            autoUpdate = blend.autoUpdate,
+            lastAutoUpdateAt = blend.lastAutoUpdateAt,
+            lastAutoUpdateFailure = blend.lastAutoUpdateFailure,
+            lastAutoUpdateDetail = blend.lastAutoUpdateDetail,
         )
     }
 }

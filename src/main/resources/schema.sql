@@ -61,3 +61,15 @@ CREATE TABLE IF NOT EXISTS blend_track (
     PRIMARY KEY (playlist_id, track_order),
     FOREIGN KEY (playlist_id) REFERENCES blend (playlist_id) ON DELETE CASCADE
 );
+
+-- Weekly automatic updates. Added after the first deployment, so existing databases get the columns too.
+ALTER TABLE blend ADD COLUMN IF NOT EXISTS auto_update BOOLEAN DEFAULT TRUE NOT NULL;
+ALTER TABLE blend ADD COLUMN IF NOT EXISTS last_auto_update_at TIMESTAMP;
+ALTER TABLE blend ADD COLUMN IF NOT EXISTS last_auto_update_failure VARCHAR(30);
+ALTER TABLE blend ADD COLUMN IF NOT EXISTS last_auto_update_detail VARCHAR(200);
+
+-- When each background job last ran, so a run missed while the app was down can catch up.
+CREATE TABLE IF NOT EXISTS job_run (
+    name        VARCHAR(100) PRIMARY KEY,
+    last_run_at TIMESTAMP    NOT NULL
+);

@@ -3,9 +3,11 @@ package dev.chesire.reblender.playlists.data
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.platform.data.JdbcMappingConfig
+import dev.chesire.reblender.playlists.models.AutoUpdateFailure
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest
 import org.springframework.context.annotation.Import
+import org.springframework.data.repository.findByIdOrNull
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,6 +37,10 @@ class BlendRepositoryTest {
         trackCount = tracks.size,
         createdAt = createdAt,
         updatedAt = createdAt,
+        autoUpdate = true,
+        lastAutoUpdateAt = null,
+        lastAutoUpdateFailure = null,
+        lastAutoUpdateDetail = null,
         members = members.map(::BlendMemberEntity),
         tracks = tracks,
     )
@@ -93,5 +99,32 @@ class BlendRepositoryTest {
         blends.deleteInvolving("friend")
 
         assertEquals(listOf("bbbbbbbbbbbbbbbbbbbbbb"), blends.findAll().map { it.playlistId })
+    }
+
+    @Test
+    fun `only blends with weekly updates on are picked up, oldest first`() {
+        blends.insert(blend("aaaaaaaaaaaaaaaaaaaaaa", createdAt = Instant.parse("2026-11-05T10:00:00Z")))
+        blends.insert(blend("bbbbbbbbbbbbbbbbbbbbbb", createdAt = Instant.parse("2026-11-01T10:00:00Z")))
+        blends.insert(blend("cccccccccccccccccccccc").copy(autoUpdate = false))
+
+        assertEquals(
+            listOf("bbbbbbbbbbbbbbbbbbbbbb", "aaaaaaaaaaaaaaaaaaaaaa"),
+            blends.findByAutoUpdateTrueOrderByCreatedAtAsc().map { it.playlistId },
+        )
+    }
+
+    @Test
+    fun `the last weekly update result is stored`() {
+        val stored = blends.insert(blend("0123456789abcdefghijkl"))
+        val at = Instant.parse("2026-11-09T06:00:00Z")
+        blends.save(
+            stored.copy(lastAutoUpdateAt = at, lastAutoUpdateFailure = AutoUpdateFailure.RELOGIN_REQUIRED, lastAutoUpdateDetail = "friend"),
+        )
+
+        val loaded = blends.findByIdOrNull("0123456789abcdefghijkl")!!
+        assertEquals(at, loaded.lastAutoUpdateAt)
+        assertEquals(AutoUpdateFailure.RELOGIN_REQUIRED, loaded.lastAutoUpdateFailure)
+        assertEquals("friend", loaded.lastAutoUpdateDetail)
+        assertEquals(3, loaded.tracks.size)
     }
 }

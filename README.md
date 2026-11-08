@@ -63,6 +63,8 @@ Settings come from environment variables. Locally they go in `.env` (`cp .env.ex
 | `APP_BASE_URL` | Yes when hosted | `https://reblender.example.com` | The public address. It must match the redirect URI from step 1. `https://` also makes the session cookie Secure. Defaults to `http://127.0.0.1:8080`. |
 | `FORWARD_HEADERS_STRATEGY` | Behind a reverse proxy | `native` | Trusts the proxy's `X-Forwarded-*` headers, but only from private-network addresses. Leave it unset when there's no proxy. |
 | `TZ` | No | e.g. `Europe/London` | Time zone for the "updated" times. |
+| `AUTO_UPDATE_CRON` | No | leave the default (`0 0 6 * * MON`) | When the weekly update runs, as a Spring cron expression (second minute hour day month weekday). |
+| `AUTO_UPDATE_ZONE` | No | leave the default (`Europe/London`) | Time zone for `AUTO_UPDATE_CRON`. |
 | `DATABASE_URL` | No | leave the default | The H2 database file. Docker uses `/data/reblender` in the `reblender-data` volume; without Docker it's `./data/reblender`. |
 | `SESSION_COOKIE_SECURE` | No | leave unset | Forces the Secure cookie flag on or off. Normally worked out from `APP_BASE_URL`. |
 
@@ -84,6 +86,15 @@ set -a; . ./.env; set +a
 Open <http://127.0.0.1:8080> and log in. To blend with others, each of them logs in too. Tick who to include (or nobody for a solo playlist), choose the range, size and shared mode, and create the playlist. **Update** rebuilds it with current top tracks.
 
 Tests and lint: `./gradlew build`.
+
+### Weekly updates
+
+Every Monday at 06:00 UK time, the app rebuilds each blend that has **Update weekly** switched on (the default; the switch is on the blend's breakdown page). It goes through them one at a time:
+- **Failures:** if one blend can't be updated, the others still are. The reason is shown in the list and on the breakdown page (for example "weekly update skipped: Sam needs to log in again").
+- **Spotify's limit:** if it's hit, the rest wait until the next week.
+- **Missed runs:** if the app was off when a run was due, it catches up a minute after it next starts.
+
+The schedule can be changed with `AUTO_UPDATE_CRON` and `AUTO_UPDATE_ZONE`.
 
 ### 4. Deploy on a server
 
@@ -278,4 +289,5 @@ The pages and the API sit on the same services. The API uses the same session lo
 | `POST` | `/api/v1/playlists` | `{"partnerIds": [...], "timeRange": "RECENT", "size": 40, "sharedMode": "CAPPED"}` |
 | `GET` | `/api/v1/playlists/{id}` | A blend with its members and songs |
 | `POST` | `/api/v1/playlists/{id}/refresh` | Rebuild from current top tracks |
+| `PUT` | `/api/v1/playlists/{id}/auto-update` | `{"autoUpdate": false}` turns the weekly update off |
 | `DELETE` | `/api/v1/playlists/{id}?removeFromSpotify=true` | Delete |
