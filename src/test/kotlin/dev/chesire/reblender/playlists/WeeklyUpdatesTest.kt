@@ -109,7 +109,7 @@ class WeeklyUpdatesTest {
     }
 
     @Test
-    fun `the default schedule is Monday 06:00 UK time`() {
+    fun `the default schedule is Monday at 6am`() {
         val next = CronExpression.parse("0 0 6 * * MON").next(LocalDateTime.of(2026, 11, 8, 12, 0))!!
         assertEquals(LocalDateTime.of(2026, 11, 9, 6, 0), next)
     }
