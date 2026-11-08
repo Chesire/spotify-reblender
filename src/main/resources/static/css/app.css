@@ -163,6 +163,8 @@ img { max-width: 100%; }
 @media (min-width: 600px) { .form-row { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); align-items: start; } }
 .field-group { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: var(--sp-2); }
 .field-label, .field-group > legend { font: var(--md-label-large); color: var(--md-on-surface); padding: 0; }
+/* A fieldset's <legend> isn't a grid item, so the group's gap doesn't apply to it; space the first control explicitly. */
+.field-group > legend + * { margin-top: var(--sp-2); }
 .supporting { font: var(--md-body-small); color: var(--md-on-surface-variant); }
 
 /* Outlined text field */
