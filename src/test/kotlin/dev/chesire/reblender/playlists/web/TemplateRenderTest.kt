@@ -171,7 +171,7 @@ class TemplateRenderTest {
 
     @Test
     fun `sign-in page explains a login Spotify refused`() {
-        val html = render("index", mapOf("loggedIn" to false, "loginError" to LoginMessages.forCode(LoginFailure.NOT_ALLOWED.code)))
+        val html = render("index", mapOf("loggedIn" to false, "loginError" to LoginMessages.forCode(LoginFailure.NOT_ALLOWED.code)!!))
         assertContains(html, "invite-only")
     }
 
