@@ -2,7 +2,7 @@
 
 > **Note:** This project is an experiment, built entirely by an AI agent (Claude). The design, code, tests, CI and docs were all generated through conversation, with a human directing and reviewing. Treat it as a test project and review it before relying on it.
 
-A self-hosted replacement for Spotify Blend. It builds a **deterministic, evenly balanced** two-person playlist from each user's Spotify top tracks, and can rebuild it on demand.
+A self-hosted replacement for Spotify Blend. It builds a **deterministic, evenly balanced** playlist for 1 to 5 people from each person's Spotify top tracks, and can rebuild it on demand.
 
 Blend often adds random recommendations or lets one person dominate. Reblender only uses each person's actual top tracks and splits the playlist evenly.
 
@@ -33,21 +33,42 @@ Time ranges are Spotify's three windows: **Recent** = `short_term` (~4 weeks), *
 
 ## Spotify limits you should know
 
-- New Spotify apps run in **Development Mode**: max **5 users**, each added by hand, and the app owner needs **Premium**.
-- **Refresh tokens expire 6 months** after a user logs in. The app tells you who needs to log in again.
+- New Spotify apps run in **Development Mode**. That means at most **5 people**, each added by hand in the Spotify dashboard, and the app owner needs **Premium**. Nobody can sign themselves up. Someone who isn't on the list gets through Spotify's login page, but Spotify then refuses the app access, and Reblender explains this on its sign-in page.
+- **Spotify logins expire 6 months** after someone logs in. The app tells you who needs to log in again.
 - Everyone in a blend must log in to the app once; Spotify doesn't expose another user's top tracks.
 
-## Setup
+## Setup and deployment
 
-1. Create an app at <https://developer.spotify.com/dashboard> (Web API).
-2. Add the redirect URI: `http://127.0.0.1:8080/login/oauth2/code/spotify`
-   (use `127.0.0.1`, not `localhost`; for a hosted install use `https://your.domain/login/oauth2/code/spotify`).
-3. Under **User Management**, add the Spotify email of everyone who will use it (you included).
-4. `cp .env.example .env && chmod 600 .env`, then fill in the client ID and secret, and set `TOKEN_ENCRYPTION_KEY` to the output of `openssl rand -base64 32` (and `APP_BASE_URL` if not local).
+### 1. Create the Spotify app
 
-## Run
+1. Go to <https://developer.spotify.com/dashboard> and click **Create app**.
+2. Fill in a name and description (anything, e.g. "Reblender").
+3. Under **Redirect URIs**, add one for every address the app will run at:
+   - local: `http://127.0.0.1:8080/login/oauth2/code/spotify` (use `127.0.0.1`, not `localhost`: Spotify only allows plain `http` for loopback addresses)
+   - hosted: `https://reblender.example.com/login/oauth2/code/spotify`
+4. Under **Which API/SDKs are you planning to use?**, tick **Web API**, agree to the terms and save.
+5. Open the app's **Settings**: copy the **Client ID**, then click **View client secret** and copy that too.
+6. Under **User Management**, add the name and Spotify account email of everyone who will use it, **including yourself**.
 
-With Docker:
+### 2. Configure
+
+Settings come from environment variables. Locally they go in `.env` (`cp .env.example .env && chmod 600 .env`); on a server, use whatever your compose setup uses.
+
+| Variable | Required | Suggested value | What it does |
+|---|---|---|---|
+| `SPOTIFY_CLIENT_ID` | Yes | from step 1 | Identifies the app to Spotify. |
+| `SPOTIFY_CLIENT_SECRET` | Yes | from step 1 | Keep it out of git and out of compose files you share. |
+| `TOKEN_ENCRYPTION_KEY` | One of these two | `openssl rand -base64 32` | Encrypts the stored Spotify logins. Losing or changing it just means everyone logs in again. |
+| `TOKEN_ENCRYPTION_KEY_FILE` | One of these two | `/run/secrets/token_encryption_key` | The same key, read from a file (Docker secret or TPM-sealed; see [Where the key lives](#where-the-key-lives-pick-one)). Recommended on a server. |
+| `APP_BASE_URL` | Yes when hosted | `https://reblender.example.com` | The public address. It must match the redirect URI from step 1. `https://` also makes the session cookie Secure. Defaults to `http://127.0.0.1:8080`. |
+| `FORWARD_HEADERS_STRATEGY` | Behind a reverse proxy | `native` | Trusts the proxy's `X-Forwarded-*` headers, but only from private-network addresses. Leave it unset when there's no proxy. |
+| `TZ` | No | e.g. `Europe/London` | Time zone for the "updated" times. |
+| `DATABASE_URL` | No | leave the default | The H2 database file. Docker uses `/data/reblender` in the `reblender-data` volume; without Docker it's `./data/reblender`. |
+| `SESSION_COOKIE_SECURE` | No | leave unset | Forces the Secure cookie flag on or off. Normally worked out from `APP_BASE_URL`. |
+
+### 3. Run it locally
+
+With Docker, building from this checkout:
 
 ```sh
 docker compose up --build
@@ -56,24 +77,93 @@ docker compose up --build
 Without Docker (JDK 21):
 
 ```sh
-set -a; . ./.env; set +a   # same values as Docker, incl. a fixed TOKEN_ENCRYPTION_KEY
+set -a; . ./.env; set +a
 ./gradlew bootRun
 ```
 
-Open <http://127.0.0.1:8080> and log in. To blend with others, have each of them log in too (on the same machine in a private window, unless you serve the app over HTTPS). Tick who to include (or nobody for a solo playlist), choose the range, size and shared mode, and create the playlist. Use **Update** to rebuild it with current top tracks.
+Open <http://127.0.0.1:8080> and log in. To blend with others, each of them logs in too. Tick who to include (or nobody for a solo playlist), choose the range, size and shared mode, and create the playlist. **Update** rebuilds it with current top tracks.
 
-Tests: `./gradlew test`.
+Tests and lint: `./gradlew build`.
 
-### Published image
+### 4. Deploy on a server
 
-Every merge to `main` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. To use it from another compose file:
+Every merge to `master` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. A typical setup runs it behind a TLS reverse proxy on the same Docker network, with no published port.
 
-```yaml
-reblender:
-  image: ghcr.io/chesire/spotify-reblender:latest
-```
+1. **DNS:** point a name at the server, e.g. `reblender.example.com`, as a CNAME to a name that already has the server's IP.
+2. **Key:** create it as a file only the container's user (UID `10001`) can read:
+   ```sh
+   mkdir -p reblender
+   openssl rand -base64 32 > reblender/token_encryption_key
+   sudo chown 10001:10001 reblender/token_encryption_key && sudo chmod 400 reblender/token_encryption_key
+   ```
+3. **Settings:** put them in `reblender/reblender.env` (`chmod 600`):
+   ```
+   SPOTIFY_CLIENT_ID=...
+   SPOTIFY_CLIENT_SECRET=...
+   APP_BASE_URL=https://reblender.example.com
+   FORWARD_HEADERS_STRATEGY=native
+   TZ=Europe/London
+   ```
+4. **Compose service:**
+   ```yaml
+   secrets:
+     reblender_token_key:
+       file: ./reblender/token_encryption_key
 
-### Logs
+   services:
+     reblender:
+       image: ghcr.io/chesire/spotify-reblender:latest
+       container_name: reblender
+       env_file: ./reblender/reblender.env
+       environment:
+         - TOKEN_ENCRYPTION_KEY_FILE=/run/secrets/reblender_token_key
+       secrets:
+         - reblender_token_key
+       volumes:
+         - reblender-data:/data
+       read_only: true
+       tmpfs:
+         - /tmp
+       security_opt:
+         - no-new-privileges:true
+       restart: unless-stopped
+
+   volumes:
+     reblender-data:
+   ```
+5. **Reverse proxy:** send `https://reblender.example.com` to `http://reblender:8080`. For example, with [SWAG](https://docs.linuxserver.io/general/swag/), add `reblender` to `SUBDOMAINS` so the certificate covers it, and create `config/nginx/site-confs/reblender.subdomain.conf`:
+   ```nginx
+   server {
+       listen 443 ssl http2;
+       listen [::]:443 ssl http2;
+       server_name reblender.*;
+       include /config/nginx/ssl.conf;
+       client_max_body_size 0;
+
+       location / {
+           include /config/nginx/proxy.conf;
+           resolver 127.0.0.11 valid=30s;
+           set $upstream_proto http;
+           set $upstream_app reblender;
+           set $upstream_port 8080;
+           proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+       }
+   }
+   ```
+6. **Start it:** `docker compose up -d`, then check `docker compose logs -f reblender` for `Started ReblenderApplication`.
+
+**Updating:** `docker compose pull reblender && docker compose up -d reblender`.
+
+### Troubleshooting
+
+| Symptom | Likely cause and fix |
+|---|---|
+| "Spotify won't let this app use your account yet" | That person isn't on the app's **User Management** list (step 1.6), or the list is full. |
+| Spotify shows "INVALID_CLIENT: Invalid redirect URI" | The redirect URI in the dashboard doesn't exactly match `APP_BASE_URL` + `/login/oauth2/code/spotify`. |
+| A certificate error **only from home** (e.g. issued by your router) | The router doesn't loop traffic for your public IP back inside ("hairpin NAT"). Add local DNS records (e.g. in Pi-hole) pointing the name at the server's LAN IP. |
+| 502 Bad Gateway | The proxy can't reach the container: check `docker compose ps` and the logs. A missing or unreadable key file stops it starting. |
+
+## Logs
 
 Everything goes to the console (`docker compose logs -f`). Each request the app receives and each call it makes to Spotify gets one line:
 

@@ -52,3 +52,8 @@ echo "== The JSON API answers 401, not a login redirect"
 code=$(curl -s -o /dev/null -w '%{http_code}' "$base/api/v1/playlists")
 echo "Anonymous GET /api/v1/playlists -> $code"
 [ "$code" = "401" ] || fail "anonymous API request didn't get 401"
+
+echo "== A failed login comes back with a reason"
+target=$(curl -s -o /dev/null -w '%{redirect_url}' "$base/login/oauth2/code/spotify?code=x&state=y")
+echo "Callback without a login in progress -> $target"
+[[ $target == *"/?login-error=failed" ]] || fail "failed login didn't redirect with login-error"
