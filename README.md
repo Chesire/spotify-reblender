@@ -66,7 +66,7 @@ Tests: `./gradlew test`.
 
 ### Published image
 
-Every merge to `master` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. To use it from another compose file:
+Every merge to `main` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. To use it from another compose file:
 
 ```yaml
 reblender:
