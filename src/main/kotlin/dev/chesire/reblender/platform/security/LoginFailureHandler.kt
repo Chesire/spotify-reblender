@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpStatusCodeException
 
 /** Why a Spotify login failed, as shown to the person. [code] goes in the `login-error` query parameter. */
-enum class LoginFailure(val code: String) {
+enum class LoginFailure(
+    val code: String,
+) {
     /** Spotify refused the profile request: in Development Mode, everyone must be on the app's allowlist. */
     NOT_ALLOWED("not-allowed"),
 
