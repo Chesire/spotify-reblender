@@ -1,8 +1,10 @@
 package dev.chesire.reblender.playlists.web
 
 import dev.chesire.reblender.accounts.models.AppUser
+import dev.chesire.reblender.accounts.web.LoginMessages
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.platform.security.LoginFailure
 import dev.chesire.reblender.playlists.models.Blend
 import dev.chesire.reblender.playlists.models.BlendTrack
 import org.thymeleaf.context.Context
@@ -165,6 +167,12 @@ class TemplateRenderTest {
     fun `sign-in page explains an ended session`() {
         val html = render("index", mapOf("loggedIn" to false, "expired" to true))
         assertContains(html, "session ended")
+    }
+
+    @Test
+    fun `sign-in page explains a login Spotify refused`() {
+        val html = render("index", mapOf("loggedIn" to false, "loginError" to LoginMessages.forCode(LoginFailure.NOT_ALLOWED.code)))
+        assertContains(html, "invite-only")
     }
 
     private fun render(

@@ -24,6 +24,7 @@
     </header>
     <p class="tagline">Balanced playlists for 1 to 5 people, built from everyone&rsquo;s top tracks.</p>
 
+    <p th:if="${loginError}" class="banner err" role="alert" th:text="${loginError}">Login failed.</p>
     <p th:if="${expired}" class="banner err" role="alert">Your session ended because your stored Spotify login is no longer in this app. Log in again to carry on.</p>
 
     <section th:unless="${loggedIn}" class="card signin">

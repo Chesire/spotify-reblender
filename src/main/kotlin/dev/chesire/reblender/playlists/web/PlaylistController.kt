@@ -1,6 +1,7 @@
 package dev.chesire.reblender.playlists.web
 
 import dev.chesire.reblender.accounts.AccountService
+import dev.chesire.reblender.accounts.web.LoginMessages
 import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
@@ -32,12 +33,15 @@ class PlaylistController(
     fun home(
         @AuthenticationPrincipal principal: OAuth2User?,
         @RequestParam(required = false) expired: String?,
+        @RequestParam(name = "login-error", required = false) loginError: String?,
         model: Model,
     ): String {
         if (principal == null) {
             model.addAttribute("loggedIn", false)
             // Set by StaleSessionInterceptor when a session outlived the user's stored login.
             model.addAttribute("expired", expired != null)
+            // Set by LoginFailureHandler.
+            model.addAttribute("loginError", LoginMessages.forCode(loginError))
             return "index"
         }
         val me = principal.name

@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCo
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy
@@ -22,6 +23,7 @@ class SecurityConfig {
     fun securityFilterChain(
         http: HttpSecurity,
         loginSuccessHandler: AuthenticationSuccessHandler,
+        loginFailureHandler: AuthenticationFailureHandler,
         authorizationRequestResolver: DefaultOAuth2AuthorizationRequestResolver,
         authorizationCodeTokenResponseClient: OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>,
         oauth2UserService: DefaultOAuth2UserService,
@@ -37,6 +39,7 @@ class SecurityConfig {
             oauth2Login {
                 loginPage = "/"
                 authenticationSuccessHandler = loginSuccessHandler
+                authenticationFailureHandler = loginFailureHandler
                 authorizationEndpoint {
                     this.authorizationRequestResolver = authorizationRequestResolver
                 }
