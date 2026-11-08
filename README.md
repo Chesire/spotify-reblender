@@ -87,7 +87,7 @@ Tests and lint: `./gradlew build`.
 
 ### 4. Deploy on a server
 
-Every merge to `main` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. A typical setup runs it behind a TLS reverse proxy on the same Docker network, with no published port.
+Every merge to `master` publishes `ghcr.io/chesire/spotify-reblender:latest`, plus a `sha-<commit>` tag for pinning or rolling back. A typical setup runs it behind a TLS reverse proxy on the same Docker network, with no published port.
 
 1. **DNS:** point a name at the server, e.g. `reblender.example.com`, as a CNAME to a name that already has the server's IP.
 2. **Key:** create it as a file only the container's user (UID `10001`) can read:
