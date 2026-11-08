@@ -63,7 +63,7 @@
                     <legend>Songs from</legend>
                     <div class="segmented stack-compact">
                         <label th:each="r, i : ${timeRanges}" class="segment-option">
-                            <input type="radio" name="timeRange" th:value="${r.name()}" th:checked="${i.first}" required>
+                            <input type="radio" name="timeRange" th:value="${r.value}" th:checked="${i.first}" required>
                             <span><th:block th:text="${r.label}">Range</th:block> <small th:text="${r.window}">window</small></span>
                         </label>
                     </div>
@@ -80,8 +80,8 @@
                         <legend>Shared songs</legend>
                         <div class="segmented stack-compact">
                             <label th:each="m, i : ${sharedModes}" class="segment-option">
-                                <input type="radio" name="sharedMode" th:value="${m.name()}" th:checked="${i.first}">
-                                <span th:text="${m.option}" th:title="${m.label}">Mode</span>
+                                <input type="radio" name="sharedMode" th:value="${m.value}" th:checked="${i.first}">
+                                <span th:text="${m.label}" th:title="${m.description}">Mode</span>
                             </label>
                         </div>
                     </fieldset>

@@ -1,6 +1,6 @@
 package dev.chesire.reblender.spotify
 
-import dev.chesire.reblender.security.SafeUrls
+import dev.chesire.reblender.platform.security.SafeUrls
 
 /** Picks an image URL from Spotify's `images` arrays, which come in several sizes in no guaranteed order. */
 object SpotifyImages {

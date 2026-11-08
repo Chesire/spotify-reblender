@@ -46,3 +46,8 @@ echo "== Protected routes need a login"
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$base/playlists")
 echo "Anonymous POST /playlists -> $code"
 [ "$code" != "200" ] || fail "anonymous POST /playlists was accepted"
+
+echo "== The JSON API answers 401, not a login redirect"
+code=$(curl -s -o /dev/null -w '%{http_code}' "$base/api/v1/playlists")
+echo "Anonymous GET /api/v1/playlists -> $code"
+[ "$code" = "401" ] || fail "anonymous API request didn't get 401"

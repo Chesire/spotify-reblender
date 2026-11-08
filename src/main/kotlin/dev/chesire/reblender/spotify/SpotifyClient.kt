@@ -2,10 +2,10 @@ package dev.chesire.reblender.spotify
 
 import dev.chesire.reblender.blend.models.TimeRange
 import dev.chesire.reblender.blend.models.Track
-import dev.chesire.reblender.config.ReblenderProperties
-import dev.chesire.reblender.logging.OutgoingRequestLogger
-import dev.chesire.reblender.security.SafeUrls
-import dev.chesire.reblender.security.SpotifyIds
+import dev.chesire.reblender.platform.config.ReblenderProperties
+import dev.chesire.reblender.platform.logging.OutgoingRequestLogger
+import dev.chesire.reblender.platform.security.SafeUrls
+import dev.chesire.reblender.platform.security.SpotifyIds
 import dev.chesire.reblender.spotify.dtos.ArtistDto
 import dev.chesire.reblender.spotify.dtos.CreatePlaylistRequest
 import dev.chesire.reblender.spotify.dtos.PlaylistDto
@@ -48,7 +48,7 @@ class SpotifyClient(
         val body =
             rest
                 .get()
-                .uri("/me/top/tracks?time_range={range}&limit={limit}", range.spotifyValue, TOP_TRACKS_LIMIT)
+                .uri("/me/top/tracks?time_range={range}&limit={limit}", range.spotifyTimeRange, TOP_TRACKS_LIMIT)
                 .headers { it.setBearerAuth(tokens.accessTokenFor(spotifyId)) }
                 .retrieve()
                 .body(String::class.java)
@@ -80,7 +80,7 @@ class SpotifyClient(
             "Top tracks for {} ({}): Spotify returned {} of {} requested; skipped {} local file(s), {} without an ID " +
                 "and {} with a malformed ID; {} usable",
             spotifyId,
-            range.spotifyValue,
+            range.spotifyTimeRange,
             items.size,
             TOP_TRACKS_LIMIT,
             local,
@@ -164,6 +164,15 @@ class SpotifyClient(
             .retrieve()
             .toBodilessEntity()
     }
+
+    /** Spotify's names for its three top-items windows. */
+    private val TimeRange.spotifyTimeRange: String
+        get() =
+            when (this) {
+                TimeRange.RECENT -> "short_term"
+                TimeRange.HALF_YEAR -> "medium_term"
+                TimeRange.ALL_TIME -> "long_term"
+            }
 
     companion object {
         const val TOP_TRACKS_LIMIT = 50

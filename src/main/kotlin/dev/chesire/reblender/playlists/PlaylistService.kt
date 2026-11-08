@@ -1,18 +1,24 @@
 package dev.chesire.reblender.playlists
 
+import dev.chesire.reblender.accounts.AccountService
+import dev.chesire.reblender.accounts.models.AppUser
 import dev.chesire.reblender.blend.BlendEngine
 import dev.chesire.reblender.blend.models.BlendedTrack
 import dev.chesire.reblender.blend.models.Participant
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.TimeRange
+import dev.chesire.reblender.platform.security.SpotifyIds
+import dev.chesire.reblender.playlists.data.BlendEntity
+import dev.chesire.reblender.playlists.data.BlendRepository
+import dev.chesire.reblender.playlists.data.toEntity
+import dev.chesire.reblender.playlists.data.toModel
+import dev.chesire.reblender.playlists.data.tracksToModel
 import dev.chesire.reblender.playlists.models.Blend
+import dev.chesire.reblender.playlists.models.BlendDetails
 import dev.chesire.reblender.playlists.models.BlendOutcome
 import dev.chesire.reblender.playlists.models.BlendTrack
 import dev.chesire.reblender.playlists.models.DeleteOutcome
-import dev.chesire.reblender.security.SpotifyIds
 import dev.chesire.reblender.spotify.SpotifyClient
-import dev.chesire.reblender.users.UserRepository
-import dev.chesire.reblender.users.models.AppUser
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientResponseException
@@ -21,10 +27,24 @@ import java.time.Instant
 @Service
 class PlaylistService(
     private val spotify: SpotifyClient,
-    private val users: UserRepository,
+    private val accounts: AccountService,
     private val blends: BlendRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwnerIdOrderByCreatedAtDesc(ownerId).map { it.toModel() }
+
+    /** The blend with its songs and members, or null if it isn't one of [ownerId]'s. */
+    fun details(
+        ownerId: String,
+        playlistId: String,
+    ): BlendDetails? {
+        if (!SpotifyIds.isPlaylistId(playlistId)) return null
+        val entity = blends.findByPlaylistIdAndOwnerId(playlistId, ownerId) ?: return null
+        val blend = entity.toModel()
+        val members = blend.memberIds.map { id -> accounts.find(id) ?: AppUser(id, id) }
+        return BlendDetails(blend, members, entity.tracksToModel())
+    }
 
     /**
      * Creates a playlist owned by [ownerId] from the owner plus up to four [partnerIds].
@@ -37,52 +57,19 @@ class PlaylistService(
         size: Int,
         sharedMode: SharedMode,
     ): BlendOutcome {
-        // Bound and shape-check what came from the form before using it in queries or messages.
-        require(partnerIds.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
-            "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
-        }
-        val partners = partnerIds.filter { it.isNotBlank() }.distinct()
-        require(partners.all(SpotifyIds::isUserId)) { "That isn't a valid person to blend with." }
-        require(ownerId !in partners) { "You're always in your own blend; pick other people." }
-        require(partners.size <= BlendEngine.MAX_PARTICIPANTS - 1) {
-            "Pick at most ${BlendEngine.MAX_PARTICIPANTS - 1} other people."
-        }
-        val memberIds = listOf(ownerId) + partners
+        val members = validMembers(ownerId, partnerIds)
+        val memberIds = members.map { it.spotifyId }
         val allowed = BlendEngine.sizeRange(memberIds.size)
         require(size in allowed) {
             "With ${memberIds.size} ${if (memberIds.size == 1) "person" else "people"} the playlist must have " +
                 "between ${allowed.first} and ${allowed.last} songs."
         }
-        val members =
-            memberIds.map { id ->
-                users.findById(id)
-                    ?: throw IllegalArgumentException(
-                        if (id ==
-                            ownerId
-                        ) {
-                            "Unknown user. Log out and in again."
-                        } else {
-                            "Someone you picked hasn't logged in yet."
-                        },
-                    )
-            }
-        // Enforced here, not just by hiding people in the form: a crafted request can't include someone who opted out.
-        members.drop(1).firstOrNull { !it.allowBlending }?.let {
-            throw IllegalArgumentException("${it.displayName} has turned off being included in blends.")
-        }
         val names = members.map { it.displayName }
 
         val (blended, usable) = buildBlend(memberIds, timeRange, size, sharedMode)
 
-        // ASCII only and well under Spotify's description limit.
-        val name = "${joinNames(names)} - ${timeRange.label}"
-        val description =
-            if (names.size == 1) {
-                "${names[0]}'s ${timeRange.label.lowercase()}. Rebuilt by spotify-reblender."
-            } else {
-                "Balanced blend of ${joinNames(names, conjunction = "and")}'s ${timeRange.label.lowercase()}. Rebuilt by spotify-reblender."
-            }
-        val playlist = spotify.createPlaylist(ownerId, name, description)
+        val name = PlaylistNaming.playlistName(names, timeRange)
+        val playlist = spotify.createPlaylist(ownerId, name, PlaylistNaming.description(names, timeRange))
         spotify.replaceItems(ownerId, playlist.id, blended.map { it.track.uri })
 
         val now = Instant.now()
@@ -100,8 +87,7 @@ class PlaylistService(
                 createdAt = now,
                 updatedAt = now,
             )
-        blends.insert(blend)
-        blends.replaceTracks(playlist.id, blended.map(::toStored))
+        blends.insert(blend.toEntity(blended.map(::toStored)))
         return BlendOutcome(blend, usable)
     }
 
@@ -110,22 +96,23 @@ class PlaylistService(
         ownerId: String,
         playlistId: String,
     ): BlendOutcome {
-        val blend =
-            blends.findByIdAndOwner(playlistId, ownerId)
-                ?: throw IllegalArgumentException("That playlist isn't one of yours.")
+        val blend = ownedBlend(ownerId, playlistId).toModel()
         // Someone who has since opted out must not have their top tracks read again.
-        blend.memberIds.drop(1).mapNotNull(users::findById).firstOrNull { !it.allowBlending }?.let {
-            throw IllegalArgumentException(
-                "${it.displayName} has turned off being included in blends, so this one can't be updated. " +
-                    "Delete it or make a new one without them.",
-            )
-        }
+        blend.memberIds
+            .drop(1)
+            .mapNotNull(accounts::find)
+            .firstOrNull { !it.allowBlending }
+            ?.let {
+                throw IllegalArgumentException(
+                    "${it.displayName} has turned off being included in blends, so this one can't be updated. " +
+                        "Delete it or make a new one without them.",
+                )
+            }
         val (blended, usable) = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode)
         spotify.replaceItems(ownerId, playlistId, blended.map { it.track.uri })
-        val now = Instant.now()
-        blends.markRefreshed(playlistId, blended.size, now)
-        blends.replaceTracks(playlistId, blended.map(::toStored))
-        return BlendOutcome(blend.copy(trackCount = blended.size, updatedAt = now), usable)
+        val updated = blend.copy(trackCount = blended.size, updatedAt = Instant.now())
+        blends.save(updated.toEntity(blended.map(::toStored)))
+        return BlendOutcome(updated, usable)
     }
 
     /**
@@ -137,9 +124,7 @@ class PlaylistService(
         playlistId: String,
         removeFromSpotify: Boolean,
     ): DeleteOutcome {
-        val blend =
-            blends.findByIdAndOwner(playlistId, ownerId)
-                ?: throw IllegalArgumentException("That playlist isn't one of yours.")
+        val blend = ownedBlend(ownerId, playlistId)
 
         var removed = false
         var status: Int? = null
@@ -156,18 +141,40 @@ class PlaylistService(
                 }
             }
         }
-        blends.delete(playlistId, ownerId)
+        blends.delete(blend)
         return DeleteOutcome(blend.playlistName, removed, status)
     }
 
-    /** Everything the breakdown page needs, or null if it isn't the owner's playlist. */
-    fun breakdown(
+    /** The owner plus validated partners, in order. Everything here came from a request, so it's all checked. */
+    private fun validMembers(
+        ownerId: String,
+        partnerIds: List<String>,
+    ): List<AppUser> {
+        val maxPartners = BlendEngine.MAX_PARTICIPANTS - 1
+        require(partnerIds.size <= maxPartners) { "Pick at most $maxPartners other people." }
+        val partners = partnerIds.filter { it.isNotBlank() }.distinct()
+        require(partners.all(SpotifyIds::isUserId)) { "That isn't a valid person to blend with." }
+        require(ownerId !in partners) { "You're always in your own blend; pick other people." }
+
+        val owner = accounts.find(ownerId) ?: throw IllegalArgumentException("Unknown user. Log out and in again.")
+        val others =
+            partners.map { id ->
+                accounts.find(id) ?: throw IllegalArgumentException("Someone you picked hasn't logged in yet.")
+            }
+        // Enforced here, not just by hiding people in the form: a crafted request can't include someone who opted out.
+        others.firstOrNull { !it.allowBlending }?.let {
+            throw IllegalArgumentException("${it.displayName} has turned off being included in blends.")
+        }
+        return listOf(owner) + others
+    }
+
+    private fun ownedBlend(
         ownerId: String,
         playlistId: String,
-    ): Breakdown? {
-        val blend = blends.findByIdAndOwner(playlistId, ownerId) ?: return null
-        val members = blend.memberIds.map { id -> users.findById(id) ?: AppUser(id, id) }
-        return Breakdown.of(blend, members, blends.findTracks(playlistId))
+    ): BlendEntity {
+        require(SpotifyIds.isPlaylistId(playlistId)) { "That isn't a valid playlist." }
+        return blends.findByPlaylistIdAndOwnerId(playlistId, ownerId)
+            ?: throw IllegalArgumentException("That playlist isn't one of yours.")
     }
 
     private fun toStored(track: BlendedTrack) =
@@ -179,8 +186,6 @@ class PlaylistService(
             contributors = track.contributors.toList(),
             imageUrl = track.track.imageUrl,
         )
-
-    fun playlistsFor(ownerId: String): List<Blend> = blends.findByOwner(ownerId)
 
     private fun buildBlend(
         memberIds: List<String>,
@@ -196,18 +201,5 @@ class PlaylistService(
         val blended = BlendEngine.blend(participants, size, sharedMode)
         require(blended.isNotEmpty()) { "Nobody in this blend has any top tracks for that time range yet." }
         return blended to memberIds.associateWith { tracksById.getValue(it).size }
-    }
-
-    companion object {
-        /** "A", "A & B", "A, B & C" (or with "and" for prose). */
-        fun joinNames(
-            names: List<String>,
-            conjunction: String = "&",
-        ): String =
-            when (names.size) {
-                0 -> ""
-                1 -> names[0]
-                else -> names.dropLast(1).joinToString(", ") + " $conjunction " + names.last()
-            }
     }
 }
