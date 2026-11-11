@@ -55,6 +55,7 @@ class TemplateRenderTest {
         timeRange = TimeRange.HALF_YEAR,
         size = 12,
         sharedMode = SharedMode.CAPPED,
+        isShuffled = true,
         trackCount = 12,
         createdAt = Instant.EPOCH,
         updatedAt = Instant.EPOCH,
@@ -124,6 +125,7 @@ class TemplateRenderTest {
         assertContains(html, "/playlists/p1/auto-update")
         assertContains(html, "status-problem")
         assertContains(html, "Cap shared songs by group size")
+        assertContains(html, "Shuffled")
         assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("breakdown", html)
     }
@@ -168,6 +170,10 @@ class TemplateRenderTest {
         assertContains(html, "last ~4 weeks")
         assertContains(html, "Let them fill it")
         assertContains(html, "data-confirm=")
+        // Shuffle is a switch that starts on.
+        val shuffleInput = Regex("<input[^>]*name=\"shuffle\"[^>]*>").find(html)?.value.orEmpty()
+        assertContains(shuffleInput, "role=\"switch\"")
+        assertContains(shuffleInput, "checked")
         assertFalse(html.contains("onsubmit="), "inline handlers would be blocked by the CSP")
         assertFalse(html.contains("th:"), "unprocessed Thymeleaf attributes left in the output")
         preview("index", html)

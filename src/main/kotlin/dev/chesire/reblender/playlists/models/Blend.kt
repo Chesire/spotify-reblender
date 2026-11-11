@@ -15,6 +15,7 @@ data class Blend(
     val timeRange: TimeRange,
     val size: Int,
     val sharedMode: SharedMode,
+    val isShuffled: Boolean = false,
     val trackCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,

@@ -79,10 +79,12 @@ class PlaylistController(
         @RequestParam timeRange: TimeRange,
         @RequestParam size: Int,
         @RequestParam sharedMode: SharedMode,
+        // An unticked checkbox isn't sent at all, so missing means off. The form ticks it by default.
+        @RequestParam(defaultValue = "false") shuffle: Boolean,
         redirect: RedirectAttributes,
     ): String {
         handle(authentication.name, redirect) {
-            val outcome = playlists.create(authentication.name, partnerIds.orEmpty(), timeRange, size, sharedMode)
+            val outcome = playlists.create(authentication.name, partnerIds.orEmpty(), timeRange, size, sharedMode, shuffle)
             PlaylistMessages.created(outcome, ::nameOf)
         }
         return "redirect:/"
