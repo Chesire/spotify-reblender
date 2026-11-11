@@ -15,6 +15,8 @@ data class Blend(
     val timeRange: TimeRange,
     val size: Int,
     val sharedMode: SharedMode,
+    /** Whether the playlist order is shuffled (still evenly spread per person) on every build. */
+    val shuffle: Boolean = false,
     val trackCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,

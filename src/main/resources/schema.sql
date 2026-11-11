@@ -68,6 +68,9 @@ ALTER TABLE blend ADD COLUMN IF NOT EXISTS last_auto_update_at TIMESTAMP;
 ALTER TABLE blend ADD COLUMN IF NOT EXISTS last_auto_update_failure VARCHAR(30);
 ALTER TABLE blend ADD COLUMN IF NOT EXISTS last_auto_update_detail VARCHAR(200);
 
+-- Shuffled order (still evenly spread per person). Existing blends were built in ranked order, so they default to off.
+ALTER TABLE blend ADD COLUMN IF NOT EXISTS shuffle BOOLEAN DEFAULT FALSE NOT NULL;
+
 -- When each background job last ran, so a run missed while the app was down can catch up.
 CREATE TABLE IF NOT EXISTS job_run (
     name        VARCHAR(100) PRIMARY KEY,

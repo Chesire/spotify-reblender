@@ -28,6 +28,7 @@ Inputs: everyone's top 50 tracks for the chosen range, a size N, and a shared-so
 4. **Uneven slots** (e.g. 7 left for 2 people): they go to more shared songs if any are left; otherwise the playlist is slightly shorter so the split stays even.
 5. Everyone gets the **same number** of their own songs. If someone has fewer than their share, everyone is capped at that number; spare shared songs fill the freed slots, otherwise the playlist is shorter.
 6. Songs are **interleaved** (e.g. `S A B S A B …`) so nobody gets a long run.
+7. **Shuffle** (on by default, a switch on the form): the same songs are picked, but each person's songs (and the shared songs) are shuffled before interleaving, and the turn order is shuffled too (e.g. `B S A B S A …`). Everyone stays just as evenly spread; only which of their songs comes when is random. The setting is saved with the blend, so manual and weekly updates reshuffle. Turn it off for ranked order.
 
 Time ranges are Spotify's three windows: **Recent** = `short_term` (~4 weeks), **Half-year** = `medium_term` (~6 months), **All-time** = `long_term` (~1 year; Spotify has no true all-time). A short window can have fewer than 50 top tracks if you haven't listened to many different songs; the success message says when that shortened a playlist.
 
@@ -286,7 +287,7 @@ The pages and the API sit on the same services. The API uses the same session lo
 | `DELETE` | `/api/v1/me` | Forget me |
 | `GET` | `/api/v1/people` | People you can blend with |
 | `GET` | `/api/v1/playlists` | Your blends |
-| `POST` | `/api/v1/playlists` | `{"partnerIds": [...], "timeRange": "RECENT", "size": 40, "sharedMode": "CAPPED"}` |
+| `POST` | `/api/v1/playlists` | `{"partnerIds": [...], "timeRange": "RECENT", "size": 40, "sharedMode": "CAPPED", "shuffle": true}` |
 | `GET` | `/api/v1/playlists/{id}` | A blend with its members and songs |
 | `POST` | `/api/v1/playlists/{id}/refresh` | Rebuild from current top tracks |
 | `PUT` | `/api/v1/playlists/{id}/auto-update` | `{"autoUpdate": false}` turns the weekly update off |

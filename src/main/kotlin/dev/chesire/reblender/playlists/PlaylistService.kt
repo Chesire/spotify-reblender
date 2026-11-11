@@ -25,6 +25,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientResponseException
 import java.time.Instant
+import kotlin.random.Random
 
 @Service
 class PlaylistService(
@@ -84,6 +85,7 @@ class PlaylistService(
         timeRange: TimeRange,
         size: Int,
         sharedMode: SharedMode,
+        shuffle: Boolean = true,
     ): BlendOutcome {
         val members = validMembers(ownerId, partnerIds)
         val memberIds = members.map { it.spotifyId }
@@ -94,7 +96,7 @@ class PlaylistService(
         }
         val names = members.map { it.displayName }
 
-        val (blended, usable) = buildBlend(memberIds, timeRange, size, sharedMode)
+        val (blended, usable) = buildBlend(memberIds, timeRange, size, sharedMode, shuffle)
 
         val name = PlaylistNaming.playlistName(names, timeRange)
         val playlist = spotify.createPlaylist(ownerId, name, PlaylistNaming.description(names, timeRange))
@@ -110,6 +112,7 @@ class PlaylistService(
             timeRange = timeRange,
             size = size,
             sharedMode = sharedMode,
+            shuffle = shuffle,
             trackCount = blended.size,
             createdAt = now,
             updatedAt = now,
@@ -136,7 +139,7 @@ class PlaylistService(
                         "Delete it or make a new one without them.",
                 )
             }
-        val (blended, usable) = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode)
+        val (blended, usable) = buildBlend(blend.memberIds, blend.timeRange, blend.size, blend.sharedMode, blend.shuffle)
         spotify.replaceItems(ownerId, playlistId, blended.map { it.track.uri })
         val updated = blend.copy(trackCount = blended.size, updatedAt = Instant.now())
         blends.save(updated.toEntity(blended.map(::toStored)))
@@ -218,12 +221,13 @@ class PlaylistService(
         timeRange: TimeRange,
         size: Int,
         sharedMode: SharedMode,
+        shuffle: Boolean,
     ): Pair<List<BlendedTrack>, Map<String, Int>> {
         // Others first: if someone's login has expired we fail before touching the owner's playlist.
         val tracksById = (memberIds.drop(1) + memberIds.first())
             .associateWith { spotify.topTracks(it, timeRange) }
         val participants = memberIds.map { Participant(it, tracksById.getValue(it)) }
-        val blended = BlendEngine.blend(participants, size, sharedMode)
+        val blended = BlendEngine.blend(participants, size, sharedMode, if (shuffle) Random.Default else null)
         require(blended.isNotEmpty()) { "Nobody in this blend has any top tracks for that time range yet." }
         return blended to memberIds.associateWith { tracksById.getValue(it).size }
     }

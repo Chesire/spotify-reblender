@@ -16,7 +16,7 @@ class PlaylistApiJsonTest {
     @Test
     fun `create request uses defaults for optional fields`() {
         val request = json.readValue("""{"timeRange":"HALF_YEAR","size":30}""", CreatePlaylistRequest::class.java)
-        assertEquals(CreatePlaylistRequest(emptyList(), TimeRange.HALF_YEAR, 30, SharedMode.CAPPED), request)
+        assertEquals(CreatePlaylistRequest(emptyList(), TimeRange.HALF_YEAR, 30, SharedMode.CAPPED, shuffle = true), request)
     }
 
     @Test
@@ -38,5 +38,6 @@ class PlaylistApiJsonTest {
         assertContains(text, "\"id\":\"0123456789abcdefghijkl\"")
         assertContains(text, "\"timeRange\":\"RECENT\"")
         assertContains(text, "\"memberIds\":[\"a\",\"b\"]")
+        assertContains(text, "\"shuffle\":false")
     }
 }

@@ -27,6 +27,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PlaylistServiceTest {
     private val spotify = mock(SpotifyClient::class.java)
@@ -97,6 +98,26 @@ class PlaylistServiceTest {
             .single() as BlendEntity
         assertEquals(listOf("owner", "friend"), saved.members.map { it.spotifyId })
         assertEquals(10, saved.tracks.size)
+        assertTrue(saved.shuffle, "new blends are shuffled unless asked not to be")
+    }
+
+    @Test
+    fun `updating keeps the blend's shuffle setting`() {
+        `when`(spotify.topTracks("friend", TimeRange.RECENT)).thenReturn(tracks("f"))
+        `when`(spotify.topTracks("owner", TimeRange.RECENT)).thenReturn(tracks("o"))
+        val entity = stored("owner", "friend").copy(shuffle = true)
+        `when`(blends.findByPlaylistIdAndOwnerId(playlistId, "owner")).thenReturn(entity)
+
+        val outcome = service.update("owner", playlistId)
+
+        assertTrue(outcome.blend.shuffle)
+        val saved = mockingDetails(blends)
+            .invocations
+            .single { it.method.name == "save" }
+            .arguments
+            .single() as BlendEntity
+        assertTrue(saved.shuffle)
+        assertEquals((tracks("o").take(5) + tracks("f").take(5)).map { it.id }.toSet(), saved.tracks.map { it.trackId }.toSet())
     }
 
     @Test

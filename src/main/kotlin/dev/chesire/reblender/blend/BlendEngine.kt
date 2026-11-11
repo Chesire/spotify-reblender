@@ -4,6 +4,7 @@ import dev.chesire.reblender.blend.models.BlendedTrack
 import dev.chesire.reblender.blend.models.Participant
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.Track
+import kotlin.random.Random
 
 /**
  * Builds a balanced playlist for 1–5 people from each person's ranked top tracks.
@@ -21,8 +22,11 @@ import dev.chesire.reblender.blend.models.Track
  *    share, everyone is capped at that number. Leftover shared songs fill the freed slots (even beyond the cap);
  *    otherwise the playlist is shorter.
  * 5. **Interleave**: each source (shared, then each person) is spread evenly through the playlist.
+ * 6. **Shuffle** (optional): the songs picked in steps 1–4 don't change, but each source's songs are shuffled
+ *    before step 5, and the order sources take turns in is shuffled too. Every person's songs stay just as
+ *    evenly spread; only which of their songs comes when, and who goes first, is random.
  *
- * Pure and deterministic: same inputs always give the same playlist.
+ * Pure: same inputs (and, when shuffling, the same [Random] seed) always give the same playlist.
  */
 object BlendEngine {
     const val MAX_PARTICIPANTS = 5
@@ -58,6 +62,7 @@ object BlendEngine {
         participants: List<Participant>,
         size: Int,
         sharedMode: SharedMode,
+        shuffle: Random? = null,
     ): List<BlendedTrack> {
         require(participants.size in 1..MAX_PARTICIPANTS) { "A blend needs 1 to $MAX_PARTICIPANTS people" }
         val allowed = sizeRange(participants.size)
@@ -116,7 +121,11 @@ object BlendEngine {
         val soloPicks = people.mapIndexed { i, person ->
             solo[i].take(quota).map { BlendedTrack(it, setOf(person.id)) }
         }
-        return interleave(listOf(sharedPicks) + soloPicks)
+        val sources = listOf(sharedPicks) + soloPicks
+        if (shuffle == null) return interleave(sources)
+
+        // Step 6.
+        return interleave(sources.map { it.shuffled(shuffle) }.shuffled(shuffle))
     }
 
     /**

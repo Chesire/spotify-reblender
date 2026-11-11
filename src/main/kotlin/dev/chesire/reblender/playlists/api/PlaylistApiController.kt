@@ -30,7 +30,14 @@ class PlaylistApiController(
         authentication: Authentication,
         @RequestBody request: CreatePlaylistRequest,
     ): ResponseEntity<PlaylistResultResponse> {
-        val outcome = playlists.create(authentication.name, request.partnerIds, request.timeRange, request.size, request.sharedMode)
+        val outcome = playlists.create(
+            authentication.name,
+            request.partnerIds,
+            request.timeRange,
+            request.size,
+            request.sharedMode,
+            request.shuffle,
+        )
         return ResponseEntity.status(HttpStatus.CREATED).body(PlaylistResultResponse.of(outcome))
     }
 
@@ -74,4 +81,6 @@ data class CreatePlaylistRequest(
     val timeRange: TimeRange,
     val size: Int,
     val sharedMode: SharedMode = SharedMode.CAPPED,
+    /** Shuffled order, still evenly spread per person. On by default, like the web form. */
+    val shuffle: Boolean = true,
 )
