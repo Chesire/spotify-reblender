@@ -227,7 +227,7 @@ class PlaylistService(
         val tracksById = (memberIds.drop(1) + memberIds.first())
             .associateWith { spotify.topTracks(it, timeRange) }
         val participants = memberIds.map { Participant(it, tracksById.getValue(it)) }
-        val blended = BlendEngine.blend(participants, size, sharedMode, if (shuffle) Random.nextLong() else null)
+        val blended = BlendEngine.blend(participants, size, sharedMode, if (shuffle) Random.Default else null)
         require(blended.isNotEmpty()) { "Nobody in this blend has any top tracks for that time range yet." }
         return blended to memberIds.associateWith { tracksById.getValue(it).size }
     }

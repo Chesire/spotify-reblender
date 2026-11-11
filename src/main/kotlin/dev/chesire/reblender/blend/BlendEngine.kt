@@ -26,7 +26,7 @@ import kotlin.random.Random
  *    before step 5, and the order sources take turns in is shuffled too. Every person's songs stay just as
  *    evenly spread; only which of their songs comes when, and who goes first, is random.
  *
- * Pure: same inputs (and, when shuffling, the same seed) always give the same playlist.
+ * Pure: same inputs (and, when shuffling, a [Random] with the same seed) always give the same playlist.
  */
 object BlendEngine {
     const val MAX_PARTICIPANTS = 5
@@ -62,7 +62,7 @@ object BlendEngine {
         participants: List<Participant>,
         size: Int,
         sharedMode: SharedMode,
-        seed: Long? = null,
+        random: Random? = null,
     ): List<BlendedTrack> {
         require(participants.size in 1..MAX_PARTICIPANTS) { "A blend needs 1 to $MAX_PARTICIPANTS people" }
         val allowed = sizeRange(participants.size)
@@ -122,10 +122,9 @@ object BlendEngine {
             solo[i].take(quota).map { BlendedTrack(it, setOf(person.id)) }
         }
         val sources = listOf(sharedPicks) + soloPicks
-        if (seed == null) return interleave(sources)
+        if (random == null) return interleave(sources)
 
         // Step 6.
-        val random = Random(seed)
         return interleave(sources.map { it.shuffled(random) }.shuffled(random))
     }
 

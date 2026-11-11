@@ -4,6 +4,7 @@ import dev.chesire.reblender.blend.models.BlendedTrack
 import dev.chesire.reblender.blend.models.Participant
 import dev.chesire.reblender.blend.models.SharedMode
 import dev.chesire.reblender.blend.models.Track
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -179,7 +180,7 @@ class BlendEngineTest {
             p("c", tracks("c", 40)),
         )
         val ranked = BlendEngine.blend(people, 30, SharedMode.CAPPED)
-        val shuffled = BlendEngine.blend(people, 30, SharedMode.CAPPED, 7L)
+        val shuffled = BlendEngine.blend(people, 30, SharedMode.CAPPED, Random(7))
         assertEquals(ranked.toSet(), shuffled.toSet())
         assertEquals(ranked.size, shuffled.size)
     }
@@ -192,7 +193,7 @@ class BlendEngineTest {
                 listOf(p("a", shared + tracks("a", 40)), p("b", shared + tracks("b", 40))),
                 30,
                 SharedMode.CAPPED,
-                seed.toLong(),
+                Random(seed),
             )
             // 10 shared, 10 of A's and 10 of B's: every block of three has one of each, in the same turn order.
             val rounds = result.pattern().chunked(3)
@@ -204,14 +205,14 @@ class BlendEngineTest {
     @Test
     fun `shuffling two people with no overlap still alternates`() {
         repeat(20) { seed ->
-            val result = BlendEngine.blend(twoFullLists(), 100, SharedMode.CAPPED, seed.toLong())
+            val result = BlendEngine.blend(twoFullLists(), 100, SharedMode.CAPPED, Random(seed))
             assertTrue(result.zipWithNext().none { (x, y) -> x.contributors == y.contributors }, "seed $seed")
         }
     }
 
     @Test
     fun `shuffling changes the order within each person's songs`() {
-        val result = BlendEngine.blend(twoFullLists(), 100, SharedMode.CAPPED, 1L)
+        val result = BlendEngine.blend(twoFullLists(), 100, SharedMode.CAPPED, Random(1))
         val aOrder = result.filter { it.contributors == setOf("a") }.map { it.track.id }
         assertNotEquals(tracks("a", 50).map { it.id }, aOrder)
         assertEquals(tracks("a", 50).map { it.id }.toSet(), aOrder.toSet())
@@ -221,14 +222,14 @@ class BlendEngineTest {
     fun `shuffling with the same seed gives the same playlist`() {
         val people = twoFullLists()
         assertEquals(
-            BlendEngine.blend(people, 40, SharedMode.CAPPED, 99L),
-            BlendEngine.blend(people, 40, SharedMode.CAPPED, 99L),
+            BlendEngine.blend(people, 40, SharedMode.CAPPED, Random(99)),
+            BlendEngine.blend(people, 40, SharedMode.CAPPED, Random(99)),
         )
     }
 
     @Test
     fun `a shuffled solo playlist has the same songs in a different order`() {
-        val result = BlendEngine.blend(listOf(p("a", tracks("a", 50))), 50, SharedMode.CAPPED, 3L)
+        val result = BlendEngine.blend(listOf(p("a", tracks("a", 50))), 50, SharedMode.CAPPED, Random(3))
         assertEquals(tracks("a", 50).map { it.id }.toSet(), result.map { it.track.id }.toSet())
         assertNotEquals(tracks("a", 50).map { it.id }, result.map { it.track.id })
     }
