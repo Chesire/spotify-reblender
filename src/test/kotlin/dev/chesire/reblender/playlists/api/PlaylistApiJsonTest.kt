@@ -38,6 +38,6 @@ class PlaylistApiJsonTest {
         assertContains(text, "\"id\":\"0123456789abcdefghijkl\"")
         assertContains(text, "\"timeRange\":\"RECENT\"")
         assertContains(text, "\"memberIds\":[\"a\",\"b\"]")
-        assertContains(text, "\"shuffle\":false")
+        assertContains(text, "\"isShuffled\":false")
     }
 }

@@ -34,7 +34,7 @@ class BlendRepositoryTest {
         timeRange = TimeRange.HALF_YEAR,
         size = 3,
         sharedMode = SharedMode.FILL,
-        shuffle = true,
+        isShuffled = true,
         trackCount = tracks.size,
         createdAt = createdAt,
         updatedAt = createdAt,

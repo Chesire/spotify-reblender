@@ -51,7 +51,7 @@ data class Breakdown(
     val sharedModeLabel: String get() = PlaylistLabels.sharedMode(blend.sharedMode)
 
     /** "Shuffled" or "Ranked order". */
-    val orderLabel: String get() = PlaylistLabels.order(blend.shuffle)
+    val orderLabel: String get() = PlaylistLabels.order(blend.isShuffled)
 
     /** Percentage of the playlist that is shared songs, for the balance bar. */
     val sharedPercent: Int get() = percent(sharedTotal)

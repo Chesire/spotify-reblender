@@ -19,7 +19,7 @@ object PlaylistLabels {
         SharedMode.FILL -> "Let shared songs fill it"
     }
 
-    fun order(shuffle: Boolean): String = if (shuffle) "Shuffled" else "Ranked order"
+    fun order(isShuffled: Boolean): String = if (isShuffled) "Shuffled" else "Ranked order"
 
     /** Short form for the segmented button. */
     fun sharedModeOption(mode: SharedMode): String = when (mode) {

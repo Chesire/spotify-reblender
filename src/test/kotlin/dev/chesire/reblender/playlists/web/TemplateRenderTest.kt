@@ -55,7 +55,7 @@ class TemplateRenderTest {
         timeRange = TimeRange.HALF_YEAR,
         size = 12,
         sharedMode = SharedMode.CAPPED,
-        shuffle = true,
+        isShuffled = true,
         trackCount = 12,
         createdAt = Instant.EPOCH,
         updatedAt = Instant.EPOCH,

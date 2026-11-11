@@ -19,8 +19,7 @@ data class PlaylistResponse(
     val timeRange: TimeRange,
     val size: Int,
     val sharedMode: SharedMode,
-    /** Whether the order is shuffled (still evenly spread per person). */
-    val shuffle: Boolean,
+    val isShuffled: Boolean,
     val trackCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -41,7 +40,7 @@ data class PlaylistResponse(
             timeRange = blend.timeRange,
             size = blend.size,
             sharedMode = blend.sharedMode,
-            shuffle = blend.shuffle,
+            isShuffled = blend.isShuffled,
             trackCount = blend.trackCount,
             createdAt = blend.createdAt,
             updatedAt = blend.updatedAt,

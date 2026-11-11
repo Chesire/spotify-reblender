@@ -98,25 +98,25 @@ class PlaylistServiceTest {
             .single() as BlendEntity
         assertEquals(listOf("owner", "friend"), saved.members.map { it.spotifyId })
         assertEquals(10, saved.tracks.size)
-        assertTrue(saved.shuffle, "new blends are shuffled unless asked not to be")
+        assertTrue(saved.isShuffled, "new blends are shuffled unless asked not to be")
     }
 
     @Test
     fun `updating keeps the blend's shuffle setting`() {
         `when`(spotify.topTracks("friend", TimeRange.RECENT)).thenReturn(tracks("f"))
         `when`(spotify.topTracks("owner", TimeRange.RECENT)).thenReturn(tracks("o"))
-        val entity = stored("owner", "friend").copy(shuffle = true)
+        val entity = stored("owner", "friend").copy(isShuffled = true)
         `when`(blends.findByPlaylistIdAndOwnerId(playlistId, "owner")).thenReturn(entity)
 
         val outcome = service.update("owner", playlistId)
 
-        assertTrue(outcome.blend.shuffle)
+        assertTrue(outcome.blend.isShuffled)
         val saved = mockingDetails(blends)
             .invocations
             .single { it.method.name == "save" }
             .arguments
             .single() as BlendEntity
-        assertTrue(saved.shuffle)
+        assertTrue(saved.isShuffled)
         assertEquals((tracks("o").take(5) + tracks("f").take(5)).map { it.id }.toSet(), saved.tracks.map { it.trackId }.toSet())
     }
 
